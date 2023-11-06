@@ -6,6 +6,6 @@ En este entorno, encontramos los exchanges, que son plataformas en línea que pe
 El propósito del CRYPTODATATHON es analizar la actividad del mercado de las criptomonedas, detectar actividades inusuales y crear alertas de riesgos a la hora de invertir en este tipo de activos digitales.<br/><br/>
 El datathonse dividirá en dos retos:<br/>
 <ul>
-<li><strong>RETO 1.</strong>strong> Ordenación yClusterizaciónde criptomonedas.</li>
-<li><strong>RETO 2.</strong>strong> Sistema de alertas tempranas.</li>
+<li><strong>RETO 1.</strong> Ordenación yClusterizaciónde criptomonedas.</li>
+<li><strong>RETO 2.</strong> Sistema de alertas tempranas.</li>
 </ul>
