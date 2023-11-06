@@ -1,0 +1,86 @@
+---
+title: "Reto1"
+author: "Blockchain Patrol"
+date: '2023-11-06'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Crypto Datathon Reto 1
+
+```{r message= FALSE, warning=FALSE}
+
+library(data.table)
+library(tidyverse)
+library(readr)
+library(ggplot2)
+
+```
+
+## Carga y limpieza de los datos
+
+Carga en primer lugar la información cualitativa de las monedas.
+
+```{r message= FALSE, warning=FALSE}
+
+info_cualitativa <- read_csv2('./Data/informacion_cualitativa_monedas_reto1.csv', show_col_types = FALSE)
+str(info_cualitativa)
+
+```
+
+```{r message= FALSE, warning=FALSE}
+
+summary(info_cualitativa)
+
+```
+
+Carga de datos de monedas en un único dataset
+
+```{r message= FALSE, warning=FALSE}
+
+info_cuantitativa <-
+  list.files(path = 'Data/Información cuantitativa monedas_reto1', pattern = "*.csv", full.names = TRUE, recursive = TRUE) %>%
+  map_df(~fread(.x, drop = 'V1') %>% add_column(Currency = sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(.x)), .before = 0))
+
+str(info_cuantitativa)
+
+```
+
+
+```{r message= FALSE, warning=FALSE}
+
+summary(info_cuantitativa)
+
+```
+
+## Análisis de datos
+
+### Outliers
+
+```{r message= FALSE, warning=FALSE}
+
+ggplot(filter(info_cuantitativa, Currency == 'Bitcoin'), aes(y = Close)) +
+  geom_boxplot(width = 0.4) +
+  ggtitle("  Close") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold', margin = margin(t = 40, b = -20))) + 
+  labs(y = bquote('$'))
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
