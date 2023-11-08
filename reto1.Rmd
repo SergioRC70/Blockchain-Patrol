@@ -19,6 +19,7 @@ library(readr)
 library(ggplot2)
 library(PerformanceAnalytics)
 library(dygraphs)
+library(tidyr)
 
 ```
 
@@ -69,6 +70,14 @@ info_cuantitativa <- info_cuantitativa %>%
   arrange(Date) %>%
   mutate(Return = (Close - lag(Close))/lag(Close)) %>%
   mutate(Return_Pctg = 100*(Close - lag(Close))/lag(Close))
+
+# Sustituimos los valores que son NaN e Inf por NA
+info_cuantitativa$Return[is.nan(info_cuantitativa$Return)] <- NA
+info_cuantitativa$Return_Pctg[is.nan(info_cuantitativa$Return_Pctg)] <- NA
+info_cuantitativa$Return[is.infinite(info_cuantitativa$Return)] <- NA
+info_cuantitativa$Return_Pctg[is.infinite(info_cuantitativa$Return_Pctg)] <- NA
+
+summary(info_cuantitativa)
 
 ```
 
@@ -168,8 +177,6 @@ info_cuantitativa_ts_bitcoin <- info_cuantitativa %>%
 
 info_cuantitativa_ts_bitcoin <- as.xts(info_cuantitativa_ts_bitcoin[, -1], order.by = as.Date(info_cuantitativa_ts_bitcoin$Date))
 
-
-
 ```
 
 ```{r message= FALSE, warning=FALSE}
@@ -182,7 +189,7 @@ dygraph(info_cuantitativa_ts_bitcoin$Close, main = "Bitcoin") %>%
 
 ## Métricas
 
-Sharpe Ratio
+#Sharpe Ratio
 
 (Rendimiento Promedio - Tasa de Rendimiento Libre de Riesgo) / Desviación Estándar de los Rendimientos Diarios
 
@@ -192,14 +199,30 @@ Sharpe Ratio
 
 ```{r message= FALSE, warning=FALSE}
 
-round(SharpeRatio(info_cuantitativa_ts_bitcoin[, "Return_Pctg", drop = FALSE], Rf = .0003), 4)
+ts_monedas_top <- info_cuantitativa %>%
+  filter(Currency %in% top_cap$Currency) %>%
+  select(Date, Return_Pctg) %>%
+  spread(Currency, Return_Pctg)
+
+ts_monedas_top <- as.xts(ts_monedas_top[, -1], order.by = as.Date(ts_monedas_top$Date))
+
+round(SharpeRatio(ts_monedas_top[, , drop = FALSE], Rf = .0003, FUN = "StdDev"), 4)
 
 ```
 
+Hemos asumido una tasa de riesgo libre del 0.03%.
 
+El índice de Sharpe mide el rendimiento por unidad de riesgo. Cuanto mayor es su valor mejor es el ratio entre riesgo y rendimiento que tiene una inversión.
 
+#Network Value To Transactions (NVT)
 
+```{r message= FALSE, warning=FALSE}
 
+nvt <- info_cuantitativa %>%
+  filter(Currency %in% top_cap$Currency) %>%
+  group_by(Currency) %>%
+  summarize(NVT = sum(`Market Cap`) / sum(Volume))
 
+nvt
 
-
+```
