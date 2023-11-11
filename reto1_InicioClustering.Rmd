@@ -1,8 +1,10 @@
 ---
 title: "Reto 1"
 author: "Blockchain Patrol"
-date: '2023-11-06'
-output: html_document
+date: "2023-11-06"
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -23,6 +25,7 @@ library(tidyr)
 library(cluster)
 library(NbClust)
 library(fpc) 
+library(factoextra)
 
 ```
 
@@ -62,7 +65,7 @@ summary(info_cuantitativa)
 
 ```
 
-Calculamos el rencimiendo diario (total y en porcentaje). Los vamos a utilizar luego para las métricas y en más sitios.
+Calculamos el rendimiendo diario (total y en porcentaje). Los vamos a utilizar luego para las métricas y en más sitios.
 
 Rendimiento Diario = [(Precio de Cierre Actual - Precio de Cierre del Día Anterior) / Precio de Cierre del Día Anterior] * 100
 
@@ -263,35 +266,28 @@ calculonvt <- info_cuantitativa %>%
 Ahora voy a añadir estos valores a crypto_summary_by_currency para hacer el clustering.
 
 ```{r}
-crypto_summary_by_currency_clustering<-crypto_summary_by_currency
+crypto_summary_by_currency_clustering <- crypto_summary_by_currency %>% remove_rownames %>% column_to_rownames(var="Currency") 
 crypto_summary_by_currency_clustering$nvt<-calculonvt$NVT
 crypto_summary_by_currency_clustering$SharpeRatio<-filaSR$Freq
 
-#Rlimino ls ptimrts variable para dejar solo datos numéricos para normalizar
-crypto_summary_by_currency_clustering_norm<-crypto_summary_by_currency_clustering %>% select(-c(1))
 ```
 
 Tenemos 107 criptomonedas con 5 variables numéricas.
 
 Para que el algoritmo de clasificación tenga sentido, es preciso normalizar cada variable, porque si no el MarketCap tendría mucho más peso.
+```{r}
+crypto_summary_by_currency_clustering_norm <- scale(crypto_summary_by_currency_clustering)
+```
+
 
 ```{r}
-normalizar <- function(x){(x-min(x))/(max(x)-min(x))}
-
-
-#Normalizo
-for (i in c(1,2,3,4,5))
-{
-crypto_summary_by_currency_clustering_norm[i] <- normalizar(crypto_summary_by_currency_clustering_norm[i])
-}
-
 #Vamos a usar distintas técnicas para ver el número óptimo de Clusters. Aquí visualizamos la silueta y el codo.
 matDist <- daisy(crypto_summary_by_currency_clustering_norm) 
 resultadosDaisy <- rep(0, 10)
 resultadosCodo <- rep(0, 10)
 for (i in c(2,3,4,5,6,7,8,9,10))
 {
-  set.seed(1)
+  set.seed(1234)
   ajuste           <- kmeans(crypto_summary_by_currency_clustering_norm, i)
   y_cluster     <- ajuste$cluster
   resultadosCodo[i] <- ajuste$tot.withinss
@@ -335,7 +331,7 @@ fviz_ch <- function(data) {
   ch <- c()
 
   for (i in 2:10) {
-    set.seed(1)
+    set.seed(1234)
     km <- kmeans(data, i) 
     ch[i] <- calinhara(data, 
                        km$cluster, 
@@ -357,5 +353,64 @@ fviz_ch <- function(data) {
 fviz_ch(crypto_summary_by_currency_clustering_norm)
 
 ```
-Obtenemos unos resultados parecidos. 3 y 8 clusteres parecen buenas soluciones
+Obtenemos unos resultados parecidos. 3 y 8 clusteres parecen buenas soluciones.
 
+Por tanto, vamos a visualizar estas agrupaciones con el algoritmo kmeans y veamos qué agrupaciones quedan
+
+
+```{r}
+set.seed(1234)
+result2Clusters <- kmeans(crypto_summary_by_currency_clustering_norm,centers = 2)
+result2Clusters$centers
+```
+Vemos que se generan 2 grupos. Destaca el segundo por una altísima influencia de MarketCap.
+
+Mostramos los resultados en forma de tabla
+
+```{r}
+result2Clusters$cluster %>%table()
+
+result2Clusters$cluster
+```
+
+Vemos que hay un grupo muy pequeño, con solo dos elementos.
+
+Vamos a visualizarlo.
+
+```{r}
+clusplot(crypto_summary_by_currency_clustering_norm, result2Clusters$cluster, color=T, shade=T, labels=0, lines=0)
+
+fviz_cluster(result2Clusters, data = crypto_summary_by_currency_clustering_norm,
+             palette = c("#FF0000", "#0000FF"),
+             ellipse.type = "euclid", # Concentration ellipse
+             star.plot = TRUE, # Add segments from centroids to items
+             repel = TRUE, # Avoid label overplotting (slow)
+             ggtheme = theme_minimal())
+```
+Lo que vemos haciendo dos grupos es que hay un grupo de dos monedas (Bitcoin y Ethereum), que son tan diferentes de las demás que es suficiente para crear un grupo. Esta conclusión es muy interesante, porque nos indica que son monedas extraordinarias.
+
+Vamos a hacer lo mismo con 4 grupos y vemos qué sucede.
+
+```{r}
+set.seed(1234)
+result4Clusters <- kmeans(crypto_summary_by_currency_clustering_norm,centers = 4)
+result4Clusters$centers
+
+result4Clusters$cluster
+```
+
+
+```{r}
+clusplot(crypto_summary_by_currency_clustering_norm, result4Clusters$cluster, color=T, shade=T, labels=0, lines=0)
+
+fviz_cluster(result4Clusters, data = crypto_summary_by_currency_clustering_norm,
+             palette = c("#FF0000", "#0000FF",  "#000000", "#C870FF"),
+             ellipse.type = "euclid", # Concentration ellipse
+             star.plot = TRUE, # Add segments from centroids to items
+             repel = TRUE, # Avoid label overplotting (slow)
+             ggtheme = theme_minimal())
+```
+
+Al hacer cuatro grupos, vemos que se mantiene el grupo anterior de Bitcoin y Ethereum y se crea un grupo nuevo para "HEX", que tiene un valor altísimo de NVT.
+
+El resto de las criptomonedas se dividen en los grupos 3 y 4.
