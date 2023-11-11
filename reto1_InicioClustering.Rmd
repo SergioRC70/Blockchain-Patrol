@@ -26,6 +26,7 @@ library(cluster)
 library(NbClust)
 library(fpc) 
 library(factoextra)
+library(corrplot)
 
 ```
 
@@ -414,3 +415,10 @@ fviz_cluster(result4Clusters, data = crypto_summary_by_currency_clustering_norm,
 Al hacer cuatro grupos, vemos que se mantiene el grupo anterior de Bitcoin y Ethereum y se crea un grupo nuevo para "HEX", que tiene un valor altísimo de NVT.
 
 El resto de las criptomonedas se dividen en los grupos 3 y 4.
+
+
+Por último hago la matriz de correlaciones.
+```{r}
+corrplot(cor(crypto_summary_by_currency_clustering), method='number')
+```
+DE aquí observamos que hay una altísima correlación entre el MarketCap y el Volumen
