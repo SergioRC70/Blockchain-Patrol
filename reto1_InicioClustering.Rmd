@@ -42,13 +42,14 @@ str(info_cualitativa)
 ```
 
 Y hacemos una primera inspección de los resultados.
+
 ```{r message= FALSE, warning=FALSE}
 
 summary(info_cualitativa)
 
 ```
 
-Ahora cargamos la información cuantitativa de monedas en un único dataset
+Ahora cargamos la información cuantitativa de monedas en un único dataset.
 
 ```{r message= FALSE, warning=FALSE}
 
@@ -60,7 +61,8 @@ str(info_cuantitativa)
 
 ```
 
-Y de nuevo visualizamos los resultados
+Y de nuevo visualizamos los resultados.
+
 ```{r message= FALSE, warning=FALSE}
 
 summary(info_cuantitativa)
@@ -89,11 +91,25 @@ summary(info_cuantitativa)
 
 ```
 
+La columna 'Circulating Supply' tiene 129 valores NA. Vemos que corresponden a la moneda SHIBA INU y son filas en las que todos los datos son 0, salvo el volumen. Como parece que no tiene mucho sentido, vamos a eliminar estas 129 filas.
+
+```{r message= FALSE, warning=FALSE}
+
+info_cuantitativa <- info_cuantitativa  %>% 
+  drop_na(`Circulating Supply`)
+
+summary(info_cuantitativa)
+
+```
+
+Ahora ya sólo tenemos valores NA en las columnas donde hemos calculado el retorno, pero esto es normal ya que para el primer día para el que tenemos datos no se puede calcular este valor.
+
 ## Análisis de datos
 
-Vamos a crear un dataset donde almacenar las variables cuantitativas de cada cripto
+Vamos a crear un dataset donde almacenar las variables cuantitativas de cada cripto.
+
 ```{r message= FALSE, warning=FALSE}
-#Preguntar a Sergio por volatility
+
 crypto_summary_by_currency <- info_cuantitativa %>%
   group_by(Currency) %>%
   summarise(`Market Cap` = mean(`Market Cap`), Volume = mean(Volume), Volatility = sd(Return_Pctg, na.rm=TRUE))
@@ -102,13 +118,12 @@ crypto_summary_by_currency
 
 ```
 
-
-## Top 10
+### Top 10
 
 Vamos a visualizar las 10 criptos más destacadas por cada uno de los parámetros.
 
 ```{r message= FALSE, warning=FALSE}
-#Por qué no usas la vaiable anterior en lugar de volver a grupar?
+
 top_cap <- info_cuantitativa %>%
   group_by(Currency) %>%
   summarise(`Market Cap` = mean(`Market Cap`)) %>%
@@ -148,9 +163,9 @@ top_volatility
 ```
 
 
-## Plot
+## Gráficas
 
-Nos quedamos con las diez acciones que tienen más capitalización de mercado
+Nos quedamos con las diez acciones que tienen más capitalización de mercado.
 
 ```{r message= FALSE, warning=FALSE}
 
@@ -158,50 +173,77 @@ info_cuantitativa_top <- filter(info_cuantitativa, Currency %in% top_cap$Currenc
 
 ```
 
-Gráfica de evolución de los precios
+Mostramos la gráfica de evolución de los precios.
 
 ```{r message= FALSE, warning=FALSE}
 
-ggplot(data = info_cuantitativa_top) +
-  geom_line(aes(x = Date, y = Close)) +
+ggplot(data = info_cuantitativa_top, aes(x = Date, y = Close)) +
+  geom_line(size = 0.5, color = "#c21807") +
   facet_wrap("Currency", nrow  = 3, scales = "free") +
-  scale_x_date(date_labels = "%b %y")+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size=4))
+  scale_x_date(date_labels = "%b %y") +
+  ggtitle("Evolución de precio de cierre") +
+  geom_smooth(method = "lm", se = FALSE, size = 0.5) +
+  theme_bw() + 
+  theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold'), axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size=4), strip.background=element_rect(colour="black", fill="#f4f4f4")) +
+  labs(x = element_blank(), y = "Precio de cierre")
   
 
 ```
 
 
-Gráfica de retorno
+Y la gráfica de retornos.
 
 ```{r message= FALSE, warning=FALSE}
 
 ggplot(data = info_cuantitativa_top) +
-  geom_line(aes(x = Date, y = Return_Pctg)) +
-  facet_wrap("Currency", nrow  = 3, scales = "free") +
-  scale_x_date(date_labels = "%b %y")
+  geom_line(aes(x = Date, y = Return_Pctg), size = 0.5, color = "#0E4C92") +
+  ggtitle("Evolución de retorno") +
+  facet_wrap("Currency", nrow  = 4, scales = "free") +
+  scale_x_date(date_labels = "%b %y") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold'), axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size=4), strip.background=element_rect(colour="black", fill="#f4f4f4")) + 
+  labs(x = element_blank(), y = "Retorno diario")
 
 ```
 
-Convertimos a objeto xts para trabajar con series temporales
+Las series temporales se pueden dividir en varias componentes: una componente tendencial, una componente estacional y una componente restante. Para cada una de las 10 monedas seleccionadas, vamos a descomponer la serie de los valores de cierre y mostrar sus distintas componentes. Únicamente lo vamos a poder hacer para series para las que disponemas de más de dos años de datos (Bitcoin, Dogecoin, Ethereum, Litecoin, Polygon y TRON)
 
 ```{r message= FALSE, warning=FALSE}
 
-info_cuantitativa_ts_bitcoin <- info_cuantitativa %>%
-  ungroup() %>%
-  filter(Currency == "Bitcoin") %>%
-  select(Date, Close, Return_Pctg)
+ts_monedas_top_close <- info_cuantitativa %>%
+  filter(Currency %in% top_cap$Currency) %>%
+  select(Date, Close) %>%
+  spread(Currency, Close)
 
-info_cuantitativa_ts_bitcoin <- as.xts(info_cuantitativa_ts_bitcoin[, -1], order.by = as.Date(info_cuantitativa_ts_bitcoin$Date))
+ts_monedas_top_close <- as.xts(ts_monedas_top_close[, -1], order.by = as.Date(ts_monedas_top_close$Date))
+
+for (i in c(2, 3, 4, 6, 7, 10))
+{
+  plot(decompose(ts(na.omit(ts_monedas_top_close[, i]), frequency = 365)))
+}
 
 ```
 
-
-Visualizamos la evolución del Bitcoin
+Nos quedamos únicamente con las fechas que tienen valor para todas las monedas y calculamos la matriz de correlación entre los precios de cierre de las distintas monedas. Usamos el coeficiente de correlación de Pearson.
 
 ```{r message= FALSE, warning=FALSE}
 
-dygraph(info_cuantitativa_ts_bitcoin$Close, main = "Bitcoin") %>%
+corrplot(cor(ts_monedas_top_close, use = "pairwise.complete.obs"), method = "number", addCoef.col = 1, tl.cex = 0.7)
+
+```
+
+Vemos que Bitcoin, Ethereum, Litecoin y TRON parecen ser las criptomonedas que mayor correlación muestran entre sí. Mostramos la gráfica de los retornos de estas cuatro criptomonedas en el año 2020.
+
+```{r message= FALSE, warning=FALSE}
+
+ts_monedas_top_return_2 <- info_cuantitativa %>%
+  filter(Currency %in% c("Bitcoin", "Ethereum", "Litecoin", "TRON")) %>%
+  select(Date, Return_Pctg) %>%
+  spread(Currency, Return_Pctg)
+
+ts_monedas_top_return_2 <- as.xts(ts_monedas_top_return_2[, -1], order.by = as.Date(ts_monedas_top_return_2$Date))
+
+dygraph(ts_monedas_top_return_2["2020/2020"], main = "Retorno diario") %>%
   dyAxis("y", label = "%") %>%
   dyOptions(colors = RColorBrewer::brewer.pal(3, "Set2"))
 
@@ -209,7 +251,7 @@ dygraph(info_cuantitativa_ts_bitcoin$Close, main = "Bitcoin") %>%
 
 ## Métricas
 
-#Sharpe Ratio
+### Sharpe Ratio
 
 (Rendimiento Promedio - Tasa de Rendimiento Libre de Riesgo) / Desviación Estándar de los Rendimientos Diarios
 
@@ -219,14 +261,14 @@ dygraph(info_cuantitativa_ts_bitcoin$Close, main = "Bitcoin") %>%
 
 ```{r message= FALSE, warning=FALSE}
 
-ts_monedas_top <- info_cuantitativa %>%
+ts_monedas_top_return <- info_cuantitativa %>%
   filter(Currency %in% top_cap$Currency) %>%
   select(Date, Return_Pctg) %>%
   spread(Currency, Return_Pctg)
 
-ts_monedas_top2 <- as.xts(ts_monedas_top[, -1], order.by = as.Date(ts_monedas_top$Date))
+ts_monedas_top_return <- as.xts(ts_monedas_top_return[, -1], order.by = as.Date(ts_monedas_top_return$Date))
 
-round(SharpeRatio(ts_monedas_top2[, , drop = FALSE], Rf = .0003, FUN = "StdDev"), 4)
+round(SharpeRatio(ts_monedas_top_return[, , drop = FALSE], Rf = .0003, FUN = "StdDev"), 4)
 
 ```
 
@@ -234,7 +276,7 @@ Hemos asumido una tasa de riesgo libre del 0.03%.
 
 El índice de Sharpe mide el rendimiento por unidad de riesgo. Cuanto mayor es su valor mejor es el ratio entre riesgo y rendimiento que tiene una inversión.
 
-#Network Value To Transactions (NVT)
+### Network Value To Transactions (NVT)
 
 ```{r message= FALSE, warning=FALSE}
 
