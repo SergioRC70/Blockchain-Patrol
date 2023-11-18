@@ -47,3 +47,12 @@ info_cuantitativa <-
 str(info_cuantitativa)
 
 ```
+
+Vamos a ver la relación de BTC/USD
+
+```{r}
+colnames(info_cuantitativa) <- c("Hora", "Exchange","Divisa", "Datos")
+infoBTCUSD<-info_cuantitativa[info_cuantitativa$Divisa == 'BTC/USDT']
+```
+
+Necesitaríamos de la columna "Datos", crear una columna con los bids y otra con los asks
