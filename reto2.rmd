@@ -24,6 +24,7 @@ library(NbClust)
 library(fpc) 
 library(factoextra)
 library(corrplot)
+library(ggpubr)
 ```
 
 
@@ -81,4 +82,108 @@ for (i in 1:nrow(info_cuantitativa_BTCUSDT)){
   info_cuantitativa_BTCUSDT$profundidad[i] <- sum(info_cuantitativa_BTCUSDT$bids[[i]][,2])
 }
 ```
+
+Hacemos lo mismo para los asks
+
+```{r}
+
+for (i in 1:nrow(info_cuantitativa_BTCUSDT)){
+  info_cuantitativa_BTCUSDT$mediaAsks[i] <- mean(info_cuantitativa_BTCUSDT$asks[[i]][,1])
+  info_cuantitativa_BTCUSDT$profundidadAsks[i] <- sum(info_cuantitativa_BTCUSDT$asks[[i]][,2])
+}
+
+```
+
+Añadimos también otra columna con la variación porcentual del precio medio y profundidad, tanto para bids como para asks
+
+```{r}
+
+info_cuantitativa_BTCUSDT <- info_cuantitativa_BTCUSDT %>%
+  mutate(varPrecioMedioBids = 100 * (mediaBids - lag(mediaBids)) / lag(mediaBids)) %>%
+  mutate(varProfundidadBids = 100 * (mediaBids - lag(profundidad)) / lag(profundidad)) %>%
+  mutate(varPrecioMedioAsks = 100 * (mediaBids - lag(mediaAsks)) / lag(mediaAsks)) %>%
+  mutate(varProfundidadAsks = 100 * (mediaAsks - lag(profundidadAsks)) / lag(profundidadAsks))
+
+```
+
+Dibujamos los gráficos de cajas para los valores medios de precios y profundidad, tanto para bids como para asks
+
+```{r}
+
+p1 <- ggplot(info_cuantitativa_BTCUSDT, aes(y = mediaBids)) +
+  geom_boxplot(width = 0.4, fill = "#7eb0d5") +
+  ggtitle("Precio medio bids") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
+  labs(y = bquote(bids))
+
+p2 <- ggplot(info_cuantitativa_BTCUSDT, aes(y = profundidad)) +
+  geom_boxplot(width = 0.4, fill = "#7eb0d5") +
+  ggtitle("Profundidad bids") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
+  labs(y = bquote(bids))
+
+p3 <- ggplot(info_cuantitativa_BTCUSDT, aes(y = varPrecioMedioBids)) +
+  geom_boxplot(width = 0.4, fill = "#7eb0d5") +
+  ggtitle("Variación precio medio bids") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
+  labs(y = bquote(bids))
+
+p4 <- ggplot(info_cuantitativa_BTCUSDT, aes(y = varProfundidadBids)) +
+  geom_boxplot(width = 0.4, fill = "#7eb0d5") +
+  ggtitle("Variación profundidad bids") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
+  labs(y = bquote(bids))
+
+ggarrange(ggarrange(p1, p2),
+          ggarrange(p3, p4),
+          nrow = 2
+          ) 
+
+```
+
+```{r}
+
+p1 <- ggplot(info_cuantitativa_BTCUSDT, aes(y = mediaAsks)) +
+  geom_boxplot(width = 0.4, fill = "#d67229") +
+  ggtitle("Precio medio asks") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
+  labs(y = bquote(bids))
+
+p2 <- ggplot(info_cuantitativa_BTCUSDT, aes(y = profundidadAsks)) +
+  geom_boxplot(width = 0.4, fill = "#d67229") +
+  ggtitle("Profundidad asks") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
+  labs(y = bquote(bids))
+
+p3 <- ggplot(info_cuantitativa_BTCUSDT, aes(y = varPrecioMedioAsks)) +
+  geom_boxplot(width = 0.4, fill = "#d67229") +
+  ggtitle("Variación precio medio asks") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
+  labs(y = bquote(bids))
+
+p4 <- ggplot(info_cuantitativa_BTCUSDT, aes(y = varProfundidadAsks)) +
+  geom_boxplot(width = 0.4, fill = "#d67229") +
+  ggtitle("Variación profundidad asks") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
+  labs(y = bquote(bids))
+
+ggarrange(ggarrange(p1, p2),
+          ggarrange(p3, p4),
+          nrow = 2
+          ) 
+
+```
+
+
+
+
+
 
