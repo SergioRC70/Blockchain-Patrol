@@ -57,17 +57,28 @@ infoBTCUSD<-info_cuantitativa[info_cuantitativa$Divisa == 'BTC/USDT']
 
 Necesitaríamos de la columna "Datos", crear una columna con los bids y otra con los asks
 
+
 ```{r}
 
 library(purrr)
 library(jsonlite)
-info_cuantitativa_json <- jsonlite::stream_in(textConnection(gsub("\\n", "", gsub("'", "\"", gsub("None", "\"0\"", info_cuantitativa$Datos)))))
+info_cuantitativa_json <- jsonlite::stream_in(textConnection(gsub("\\n", "", gsub("'", "\"", gsub("None", "\"0\"", infoBTCUSD$Datos)))))
 
-#info_cuantitativa_json <- as.data.frame(do.call(cbind, info_cuantitativa_json))
-
-df_bids <- info_cuantitativa_json[, c(1, 2, 4, 5, 6)] %>%
-  unnest(bids)
-df_asks <- info_cuantitativa_json[, c(1, 3, 4, 5, 6)] %>%
-  unnest(asks)
 
 ```
+Meto en un nuevo Dataset toda la información que nos interesa
+```{r}
+info_cuantitativa_json$Exchange <- infoBTCUSD$Exchange
+info_cuantitativa_json$Hora <- infoBTCUSD$Hora
+info_cuantitativa_BTCUSDT = select(info_cuantitativa_json, -4:-6)
+
+```
+
+Calculo la media de los bids registrados en cada línea así como la profundidad, con la suma de las cantidades arriesgadas de todos los bids
+```{r}
+for (i in 1:nrow(info_cuantitativa_BTCUSDT)){
+  info_cuantitativa_BTCUSDT$mediaBids[i] <- mean(info_cuantitativa_BTCUSDT$bids[[i]][,1])
+  info_cuantitativa_BTCUSDT$profundidad[i] <- sum(info_cuantitativa_BTCUSDT$bids[[i]][,2])
+}
+```
+
