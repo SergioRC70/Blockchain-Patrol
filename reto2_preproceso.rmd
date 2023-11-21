@@ -1,0 +1,106 @@
+---
+title: "Reto2"
+author: "Blockchain Patrol"
+date: "2023-11-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Crypto Datathon Reto 2
+
+```{r message= FALSE, warning=FALSE}
+
+library(data.table)
+library(tidyverse)
+library(readr)
+library(ggplot2)
+library(PerformanceAnalytics)
+library(dygraphs)
+library(tidyr)
+library(cluster)
+library(NbClust)
+library(fpc) 
+library(factoextra)
+library(corrplot)
+library(ggpubr)
+library(purrr)
+library(jsonlite)
+
+```
+
+Los order books que tenemos tienen horas con milisegundos, por lo que vamos a cambiar la opción para visualizar las fechas con este nivel de detalle.
+
+```{r message= FALSE, warning=FALSE}
+
+op <- options(digits.secs=3)
+
+```
+
+Cargamos en primer lugar la información cualitativa de las monedas.
+
+```{r message= FALSE, warning=FALSE}
+
+info_cualitativa <- read_csv2('./Data/informacion_cualitativa_monedas_reto2.csv', show_col_types = FALSE)
+str(info_cualitativa)
+
+```
+
+Vamos a cargar un order book para ver su estructura
+
+```{r message= FALSE, warning=FALSE}
+
+info_cuantitativa <- read_csv('./Data/información_cuantitava_monedas_reto2/crypto_orderbooks_chunk_0.csv', show_col_types = FALSE, col_names = F)
+# Descripción del dataframe que hemos cargado
+str(info_cuantitativa)
+# Mostramos también los distintos exchanges y los distintos pares de cambios que tenemos
+cat("\n\nExchanges: ")
+exchanges <- unique(info_cuantitativa$X2)
+exchanges
+cat("\n\nCabmios de monedas: ")
+symbols <- unique(info_cuantitativa$X3)
+symbols
+
+
+```
+
+Para poder trabajar con toda esta información, vamos a realizar distintas particiones para cada uno de los cambios. Este es un proceso muy largo por lo que vamos a ejecutarlo una única vez y salvar los distintos dataframes en archivos rda.
+
+```{r message= FALSE, warning=FALSE}
+
+read_symbol <- function (fname, symbol) {
+  df <- fread(fname)
+  colnames(df) <- c("Hora", "Exchange","Divisa", "Datos")
+  df <- df[df$Divisa == symbol]
+  df$Datos <- gsub("\\n", "", gsub("'", "\"", gsub("None", "\"0\"", df$Datos)))
+
+  df_json <- jsonlite::stream_in(textConnection(df$Datos), pagesize = 10000)
+  
+  df_json$Exchange <- df$Exchange
+  df_json$Hora <- df$Hora
+
+  df = select(df_json, -4:-6)
+  
+  return(df)
+}
+
+
+for (symbol in symbols) {
+  rm(info_symbol)
+  gc()
+  
+  info_symbol <- data.frame()
+  
+  info_symbol <- list.files(path = 'Data/información_cuantitava_monedas_reto2', pattern = "*.csv", full.names = TRUE, recursive = TRUE) %>%
+    map_df(~rbind(read_symbol(.x, symbol), info_symbol))
+  
+  # Guardamos
+  save(info_symbol, file=paste("crypto_orderbooks_", gsub("/", "_", symbol), ".Rda", sep = ""))
+}
+
+gc()
+
+```
+
