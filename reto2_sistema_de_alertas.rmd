@@ -43,9 +43,11 @@ Cargamos el dataframe con las operaciones de BTC/USTD.
 
 ```{r message= FALSE, warning=FALSE}
 
-load(file="crypto_orderbooks_BTC_USDT.Rda")
+load(file="crypto_orderbooks_ADA_USDT.Rda")
 
 ```
+
+## Calcula y define métricas que permitan configurar un sistema de alertas
 
 Calculamos distintas métricas y las vamos a guardar en columnas:
 - La media de los bids registrados en cada línea
@@ -69,15 +71,93 @@ for (i in 1:nrow(info_symbol)){
 info_symbol <- info_symbol %>%
   arrange(Exchange, Hora) %>%
   mutate(varPrecioMedioBids = 100 * (mediaBids - lag(mediaBids)) / lag(mediaBids)) %>%
-  mutate(varProfundidadBids = 100 * (mediaBids - lag(profundidad)) / lag(profundidad)) %>%
-  mutate(varPrecioMedioAsks = 100 * (mediaBids - lag(mediaAsks)) / lag(mediaAsks)) %>%
-  mutate(varProfundidadAsks = 100 * (mediaAsks - lag(profundidadAsks)) / lag(profundidadAsks))
+  mutate(varProfundidadBids = 100 * (profundidad - lag(profundidad)) / lag(profundidad)) %>%
+  mutate(varPrecioMedioAsks = 100 * (mediaAsks - lag(mediaAsks)) / lag(mediaAsks)) %>%
+  mutate(varProfundidadAsks = 100 * (profundidadAsks - lag(profundidadAsks)) / lag(profundidadAsks))
+
+```
+
+## Encuentra patrones
+
+Calculamos la correlación que hay entre las distintas métricas que hemos calculado.
+
+```{r message= FALSE, warning=FALSE}
+
+corrplot(cor(info_symbol[, 6:13], use = "pairwise.complete.obs"), method = "number", addCoef.col = 1, tl.cex = 0.7)
+
+```
+
+Las correlaciones más fuertes parecen ser las siguientes:
+* Precio medio de bids - Profundidad de bids. Existe fuerte correlación negativa.
+* Profundidad de bids - Profundidad de asks. Existe fuerte correlación positiva.
+* Precio medio de asks - Profundidad de asks. Existe fuerte correlación positiva.
+
+Podemos dibujar estas correlaciones a través de un gráfico de dispersión.
+
+```{r message= FALSE, warning=FALSE}
+
+ggplot(info_symbol, aes(x = mediaBids, y = profundidad)) + 
+  geom_point() +
+  geom_smooth(method=lm) +
+  ggtitle("Precio medio de bids - Profundidad de bids") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold'), axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size=4), strip.background=element_rect(colour="black", fill="#f4f4f4")) + 
+  labs(x = "Precio medio de bids", y = "Profundidad de bids")
+
+```
+
+
+```{r message= FALSE, warning=FALSE}
+
+ggplot(info_symbol, aes(x = profundidad, y = profundidadAsks)) + 
+  geom_point() +
+  geom_smooth(method=lm) +
+  ggtitle("Profundidad de bids - Profundidad de asks") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold'), axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size=4), strip.background=element_rect(colour="black", fill="#f4f4f4")) + 
+  labs(x = "Profundidad de bids", y = "Profundidad de asks")
+
+```
+
+```{r message= FALSE, warning=FALSE}
+
+ggplot(info_symbol, aes(x = mediaAsks, y = profundidadAsks)) + 
+  geom_point() +
+  geom_smooth(method=lm) +
+  ggtitle("Precio medio de asks - Profundidad de asks") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold'), axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size=4), strip.background=element_rect(colour="#black", fill="#f4f4f4")) + 
+  labs(x = "Precio medio de asks", y = "Profundidad de asks")
+
+```
+
+## Elije umbrales de comportamiento anómalo
+
+Calculamos los cuantiles para las métricas calculadas para bids.
+
+```{r message= FALSE, warning=FALSE}
+
+quantile(info_symbol$mediaBids, c(.25, .50, .75))
+quantile(info_symbol$profundidad, c(.25, .50, .75))
+quantile(info_symbol$varPrecioMedioBids, c(.25, .50, .75), na.rm = T)
+quantile(info_symbol$varProfundidadBids, c(.25, .50, .75), na.rm = T)
+
+```
+
+Y para asks
+
+```{r message= FALSE, warning=FALSE}
+
+quantile(info_symbol$mediaAsks, c(.25, .50, .75))
+quantile(info_symbol$profundidadAsks, c(.25, .50, .75))
+quantile(info_symbol$varPrecioMedioAsks, c(.25, .50, .75), na.rm = T)
+quantile(info_symbol$varProfundidadAsks, c(.25, .50, .75), na.rm = T)
 
 ```
 
 Dibujamos los gráficos de cajas para los valores medios de precios y profundidad, tanto para bids como para asks
 
-```{r}
+```{r message= FALSE, warning=FALSE}
 
 p1 <- ggplot(info_symbol, aes(y = mediaBids)) +
   geom_boxplot(width = 0.4, fill = "#7eb0d5") +
@@ -114,7 +194,7 @@ ggarrange(ggarrange(p1, p2),
 
 ```
 
-```{r}
+```{r message= FALSE, warning=FALSE}
 
 p1 <- ggplot(info_symbol, aes(y = mediaAsks)) +
   geom_boxplot(width = 0.4, fill = "#d67229") +
