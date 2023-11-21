@@ -43,16 +43,27 @@ Cargamos el dataframe con las operaciones de BTC/USTD.
 
 ```{r message= FALSE, warning=FALSE}
 
-datos_ASA_USDT<-load(file="crypto_orderbooks_agregados_ADA_USDT.Rda")
-datos_AVAX_USDT<-load(file="crypto_orderbooks_agregados_AVAX_USDT.Rda")
-datos_DOT_USDT<-load(file="crypto_orderbooks_agregados_DOT_USDT.Rda")
-datos_LTC_USDT<-load(file="crypto_orderbooks_agregados_LTC_USDT.Rda")
-datos_MATIC_USDT<-load(file="crypto_orderbooks_agregados_MATIC_USDT.Rda")
-datos_SHIB_USDT<-load(file="crypto_orderbooks_agregados_SHIB_USDT.Rda")
-datos_SOL_USDT<-load(file="crypto_orderbooks_agregados_SOL_USDT.Rda")
-datos_UNI_USDT<-load(file="crypto_orderbooks_agregados_UNI_USDT.Rda")
-datos_XRP_USDT<-load(file="crypto_orderbooks_agregados_XRP_USDT.Rda")
-
+load(file="crypto_orderbooks_agregados_ADA_USDT.Rda")
+datos_ASA_USDT<-select(info_symbol, -2,-3)
+load(file="crypto_orderbooks_agregados_AVAX_USDT.Rda")
+datos_AVAX_USDT<-select(info_symbol, -2,-3)
+load(file="crypto_orderbooks_agregados_DOT_USDT.Rda")
+datos_DOT_USDT<-select(info_symbol, -2,-3)
+load(file="crypto_orderbooks_agregados_LTC_USDT.Rda")
+datos_LTC_USDT<-select(info_symbol, -2,-3)
+load(file="crypto_orderbooks_agregados_MATIC_USDT.Rda")
+datos_MATIC_USDT<-select(info_symbol, -2,-3)
+load(file="crypto_orderbooks_agregados_SHIB_USDT.Rda")
+datos_SHIB_USDT<-select(info_symbol, -2,-3)
+load(file="crypto_orderbooks_agregados_SOL_USDT.Rda")
+datos_SOL_USDT<-select(info_symbol, -2,-3)
+load(file="crypto_orderbooks_agregados_UNI_USDT.Rda")
+datos_UNI_USDT<-select(info_symbol, -2,-3)
+load(file="crypto_orderbooks_agregados_XRP_USDT.Rda")
+datos_XRP_USDT<-select(info_symbol, -2,-3)
+load(file="crypto_orderbooks_agregados_ETH_BTC.Rda")
+datos_ETH_BTC<-select(info_symbol, -2,-3)
+rm(info_symbol)
 ```
 
 Calculamos distintas métricas y las vamos a guardar en columnas:
@@ -87,28 +98,28 @@ Dibujamos los gráficos de cajas para los valores medios de precios y profundida
 
 ```{r}
 
-p1 <- ggplot(info_symbol, aes(y = mediaBids)) +
+p1 <- ggplot(datos_ASA_USDT, aes(y = mediaBids)) +
   geom_boxplot(width = 0.4, fill = "#7eb0d5") +
   ggtitle("Precio medio bids") +
   theme_bw() +
   theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
   labs(y = bquote(bids))
 
-p2 <- ggplot(info_symbol, aes(y = profundidad)) +
+p2 <- ggplot(datos_ASA_USDT, aes(y = profundidad)) +
   geom_boxplot(width = 0.4, fill = "#7eb0d5") +
   ggtitle("Profundidad bids") +
   theme_bw() +
   theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
   labs(y = bquote(bids))
 
-p3 <- ggplot(info_symbol, aes(y = varPrecioMedioBids)) +
+p3 <- ggplot(datos_ASA_USDT, aes(y = varPrecioMedioBids)) +
   geom_boxplot(width = 0.4, fill = "#7eb0d5") +
   ggtitle("Variación precio medio bids") +
   theme_bw() +
   theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
   labs(y = bquote(bids))
 
-p4 <- ggplot(info_symbol, aes(y = varProfundidadBids)) +
+p4 <- ggplot(datos_ASA_USDT, aes(y = varProfundidadBids)) +
   geom_boxplot(width = 0.4, fill = "#7eb0d5") +
   ggtitle("Variación profundidad bids") +
   theme_bw() +
@@ -164,5 +175,8 @@ ggarrange(ggarrange(p1, p2),
 save(info_symbol, file=paste("crypto_orderbooks_", "agregados_ETH_BTC.Rda", sep = ""))
 ```
 
+```{r}
+info_symbol<-""
+```
 
 
