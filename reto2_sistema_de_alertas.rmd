@@ -1,0 +1,157 @@
+---
+title: "Reto2"
+author: "Blockchain Patrol"
+date: "2023-11-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Crypto Datathon Reto 2
+
+```{r message= FALSE, warning=FALSE}
+
+library(data.table)
+library(tidyverse)
+library(readr)
+library(ggplot2)
+library(PerformanceAnalytics)
+library(dygraphs)
+library(tidyr)
+library(cluster)
+library(NbClust)
+library(fpc) 
+library(factoextra)
+library(corrplot)
+library(ggpubr)
+library(purrr)
+library(jsonlite)
+
+```
+
+Los order books que tenemos tienen horas con milisegundos, por lo que vamos a cambiar la opción para visualizar las fechas con este nivel de detalle.
+
+```{r message= FALSE, warning=FALSE}
+
+op <- options(digits.secs=3)
+
+```
+
+Cargamos el dataframe con las operaciones de BTC/USTD.
+
+```{r message= FALSE, warning=FALSE}
+
+load(file="crypto_orderbooks_BTC_USDT.Rda")
+
+```
+
+Calculamos distintas métricas y las vamos a guardar en columnas:
+- La media de los bids registrados en cada línea
+- Profundidad, con la suma de las cantidades arriesgadas de todos los bids
+- La media de los asks registrados en cada línea
+- Profundidad, con la suma de las cantidades arriesgadas de todos los asks
+- Variación porcentual del precio medio de bids
+- Variación porcentual de profundidad de bids
+- Variación porcentual del precio medio de asks
+- Variación porcentual de profundidad de asks
+
+```{r message= FALSE, warning=FALSE}
+
+for (i in 1:nrow(info_symbol)){
+  info_symbol$mediaBids[i] <- mean(info_symbol$bids[[i]][,1])
+  info_symbol$profundidad[i] <- sum(info_symbol$bids[[i]][,2])
+  info_symbol$mediaAsks[i] <- mean(info_symbol$asks[[i]][,1])
+  info_symbol$profundidadAsks[i] <- sum(info_symbol$asks[[i]][,2])
+}
+
+info_symbol <- info_symbol %>%
+  arrange(Exchange, Hora) %>%
+  mutate(varPrecioMedioBids = 100 * (mediaBids - lag(mediaBids)) / lag(mediaBids)) %>%
+  mutate(varProfundidadBids = 100 * (mediaBids - lag(profundidad)) / lag(profundidad)) %>%
+  mutate(varPrecioMedioAsks = 100 * (mediaBids - lag(mediaAsks)) / lag(mediaAsks)) %>%
+  mutate(varProfundidadAsks = 100 * (mediaAsks - lag(profundidadAsks)) / lag(profundidadAsks))
+
+```
+
+Dibujamos los gráficos de cajas para los valores medios de precios y profundidad, tanto para bids como para asks
+
+```{r}
+
+p1 <- ggplot(info_symbol, aes(y = mediaBids)) +
+  geom_boxplot(width = 0.4, fill = "#7eb0d5") +
+  ggtitle("Precio medio bids") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
+  labs(y = bquote(bids))
+
+p2 <- ggplot(info_symbol, aes(y = profundidad)) +
+  geom_boxplot(width = 0.4, fill = "#7eb0d5") +
+  ggtitle("Profundidad bids") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
+  labs(y = bquote(bids))
+
+p3 <- ggplot(info_symbol, aes(y = varPrecioMedioBids)) +
+  geom_boxplot(width = 0.4, fill = "#7eb0d5") +
+  ggtitle("Variación precio medio bids") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
+  labs(y = bquote(bids))
+
+p4 <- ggplot(info_symbol, aes(y = varProfundidadBids)) +
+  geom_boxplot(width = 0.4, fill = "#7eb0d5") +
+  ggtitle("Variación profundidad bids") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
+  labs(y = bquote(bids))
+
+ggarrange(ggarrange(p1, p2),
+          ggarrange(p3, p4),
+          nrow = 2
+          ) 
+
+```
+
+```{r}
+
+p1 <- ggplot(info_symbol, aes(y = mediaAsks)) +
+  geom_boxplot(width = 0.4, fill = "#d67229") +
+  ggtitle("Precio medio asks") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
+  labs(y = bquote(bids))
+
+p2 <- ggplot(info_symbol, aes(y = profundidadAsks)) +
+  geom_boxplot(width = 0.4, fill = "#d67229") +
+  ggtitle("Profundidad asks") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
+  labs(y = bquote(bids))
+
+p3 <- ggplot(info_symbol, aes(y = varPrecioMedioAsks)) +
+  geom_boxplot(width = 0.4, fill = "#d67229") +
+  ggtitle("Variación precio medio asks") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
+  labs(y = bquote(bids))
+
+p4 <- ggplot(info_symbol, aes(y = varProfundidadAsks)) +
+  geom_boxplot(width = 0.4, fill = "#d67229") +
+  ggtitle("Variación profundidad asks") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
+  labs(y = bquote(bids))
+
+ggarrange(ggarrange(p1, p2),
+          ggarrange(p3, p4),
+          nrow = 2
+          ) 
+
+```
+
+
+
+
+
