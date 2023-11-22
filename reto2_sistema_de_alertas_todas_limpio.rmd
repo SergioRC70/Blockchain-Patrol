@@ -147,7 +147,7 @@ Calculamos la correlación que hay entre las distintas métricas que hemos calcu
 
 ```{r message= FALSE, warning=FALSE}
 VisualizarCorrelacion <- function(datos){
-corrplot(cor(datos[, 6:11], use = "pairwise.complete.obs"), method = "number", addCoef.col = 1, tl.cex = 0.7)
+corrplot(cor(datos[, 4:7], use = "pairwise.complete.obs"), method = "number", addCoef.col = 1, tl.cex = 0.7)
 }
 
 #Aquí añadir el DF que queramos
