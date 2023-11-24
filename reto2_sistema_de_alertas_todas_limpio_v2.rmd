@@ -1,8 +1,10 @@
 ---
-title: "Reto2"
+title: "Reto 2"
 author: "Blockchain Patrol"
 date: "2023-11-17"
-output: html_document
+output: 
+  html_document:
+    toc: true
 ---
 
 ```{r setup, include=FALSE}
@@ -10,6 +12,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Crypto Datathon Reto 2
+
+El objetivo de este reto es detectar un comportamiento anómalo en la fluctuación del precio de las criptomonedas en los exchanges. Para ello, es necesario elegir una serie de indicadores que muestren la actividad inusual de estos activos financieros estas plataformas, identificar patrones entre pares de monedas y establecer umbrales y señales de comportamientos inusuales en las plataformas de intercambio de criptomonedas, que funcionan como intermediarios para comprar, vender e intercambiar estos activos digitales.
 
 ```{r message= FALSE, warning=FALSE}
 
@@ -39,7 +43,25 @@ op <- options(digits.secs=3)
 
 ```
 
-Cargamos el dataframe con las operaciones de BTC/USTD.
+## 1. Calcula y define métricas que permitan configurar un sistema de alertas
+
+En el apendice 1 al final del documento se pueden ver las operaciones realizadas para generar los dataframes que vamos a utilizar para el análisis. Hemos generado un dataframe por cada cambio de moneda con las siguientes columnas:
+
+* __symbol__: criptomoneda que se cambia
+* __Exchange__: exchange donde se registra la operación
+* __Hora__: timestamp de la operación
+* __mediaBids__: valor medio de la demanda recogida en la entrada
+* __profundida__: cantidad de demanda recogida en la entrada
+* __mediaAsks__: valor medio de la oferta recogida en la entrada
+* __profundidadAsks__: cantidad de oferta recogida en la entrada
+* __varPrecioMedioBids__: variación del valor de la demanda con respecto a la entrada anterior en el mismo exchange
+* __varProfundidadBids__: variación del valor de la oferta con respecto a la entrada anterior en el mismo exchange
+* __varPrecioMedioAsks__: variación de la cantidad de demanda con respecto a la entrada anterior en el mismo exchange
+* __varProfundidadAsks__: variación de la cantidad de oferta con respecto a la entrada anterior en el mismo exchange
+* __tiempoLlegada__: tiempo que transcurre con respecto a la entrada anterior en el mismo exchange
+* __sentimientoCompraVenta__: el sentimiento de compra-venta lo calculamos como la ratio entre demanda y oferta
+
+Cargamos todos estos dataframes que previamente hemos salvado en ficheros .rda (se han subido también como parte de la entrega para poder ejecutar este rmd; se deben guardar en el mismo directorio en el que esté este fichero).
 
 ```{r message= FALSE, warning=FALSE}
 
@@ -58,16 +80,7 @@ load(file="crypto_orderbooks_agregados_DOGE_USDT.Rda")
 
 ```
 
-
-Sentimiento compra-venta = ratio entre bids y asks.
-Un valor muy bajo implica que mucha gente quiere vender frente a poca gente que quiere comprar.
-Un valor muy alto implica que mucha gente quiere comprar frente a poca gente que quiere vender.
-
-## Calcula y define métricas que permitan configurar un sistema de alertas
-
-Ahora vamos a poner NA en el primer registro de cada exchange de cada día en las variaciones, puesto que en ese caso no tiene sentido.
-
-Para ello creamos una función que ordena los datos por
+Ahora vamos a poner NA en el primer registro de cada exchange de cada día en las variaciones, puesto que en ese caso no tiene sentido. Para ello creamos una función que ordena los datos por exchange.
 
 ```{r message= FALSE, warning=FALSE}
 setNAsVariables <- function(datos){
@@ -115,7 +128,7 @@ setNAsVariables <- function(datos){
 
 ```
 
-Ahora utilizamos la función anterior para limpiar los lags erroneos
+Ahora utilizamos la función anterior para limpiar los lags erroneos.
 
 ```{r}
 datos_ADA_USDT <- datos_ADA_USDT[order(datos_ADA_USDT$Hora),]
@@ -156,25 +169,66 @@ datos_XRP_USDT<-setNAsVariables(datos_XRP_USDT)
 
 ```
 
-## Encuentra patrones
+Ya tenemos nuestros dataframes listos para hacer el análisis de datos y con las métricas que ya hemos definido:
 
-Calculamos la correlación que hay entre las distintas métricas que hemos calculado.
+* Valor medio de la demanda recogida en la entrada
+* Cantidad de demanda recogida en la entrada
+* Valor medio de la oferta recogida en la entrada
+* Cantidad de oferta recogida en la entrada
+* Variación del valor de la demanda con respecto a la entrada anterior en el mismo exchange
+* Variación del valor de la oferta con respecto a la entrada anterior en el mismo exchange
+* Variación de la cantidad de demanda con respecto a la entrada anterior en el mismo exchange
+* Variación de la cantidad de oferta con respecto a la entrada anterior en el mismo exchange
+* Tiempo que transcurre con respecto a la entrada anterior en el mismo exchange
+* Sentimiento de compra-venta calculado como la ratio entre demanda y oferta
+
+## 2. Encuentra patrones
+
+Vamos a calcular la correlación que hay entre las distintas métricas que hemos calculado para distintas monedas.
+
+Creamos en primer lugar una función a la que vamos a llamar para las distintas monedas.
 
 ```{r message= FALSE, warning=FALSE}
+
 VisualizarCorrelacion <- function(datos){
-corrplot(cor(datos[, 4:7], use = "pairwise.complete.obs"), method = "number", addCoef.col = 1, tl.cex = 0.7)
+  corrplot(cor(datos[, 4:7], use = "pairwise.complete.obs"), method = "number", addCoef.col = 1, tl.cex = 0.7)
 }
 
-#Aquí añadir el DF que queramos
-VisualizarCorrelacion (datos_ADA_USDT)
 ```
 
-Las correlaciones más fuertes parecen ser las siguientes:
+Visualizamos en primer lugar las correlaciones para ADA/USDT.
+
+```{r message= FALSE, warning=FALSE}
+
+VisualizarCorrelacion (datos_ADA_USDT)
+
+```
+
+Vamos a comparar con las correlaciones de BTC/USDT.
+
+```{r message= FALSE, warning=FALSE}
+
+VisualizarCorrelacion (datos_BTC_USDT)
+
+```
+
+Y, finalmente, con las de ETH/BTC.
+
+```{r message= FALSE, warning=FALSE}
+
+VisualizarCorrelacion (datos_ETH_BTC)
+
+```
+
+Las correlaciones para ADA/USDT y para ETH/BTC son muy parecidas. Vemos que las correlaciones más fuertes parecen ser las siguientes:
+
 * Precio medio de bids - Profundidad de bids. Existe fuerte correlación negativa.
 * Profundidad de bids - Profundidad de asks. Existe fuerte correlación positiva.
 * Precio medio de asks - Profundidad de asks. Existe fuerte correlación positiva.
 
-Podemos dibujar estas correlaciones a través de un gráfico de dispersión.
+Para BTC/USDT sí que existe una correlación fuerte entre la profundidad de bids y la profundad de asks pero no observamos las otras dos correlaciones. Sí que se observa, por el contrario, una fuerte correlación entre el valor medio de bids y el valor medio de asks.
+
+Podemos ver las correlaciones mencionadas para ADA/USDT a través de gráficos de dispersión.
 
 ```{r message= FALSE, warning=FALSE}
 VisualizarCorrelacionMediaBids_Profundidad <- function(datos, moneda){
@@ -222,9 +276,9 @@ ggplot(datos, aes(x = mediaAsks, y = profundidadAsks)) +
 VisualizarCorrelacionMediaAsks_ProfAsks(datos_ADA_USDT, "ADA_USDT")
 ```
 
-## Elije umbrales de comportamiento anómalo
+## 3. Elije umbrales de comportamiento anómalo
 
-Calculamos los cuantiles para las métricas calculadas para bids.
+Para ver umbrales de comportamiento anómalo, podemos calcular los cuantiles para las métricas calculadas para la demanda (por ejemplo, para el cambio BTC/USDT).
 
 ```{r message= FALSE, warning=FALSE}
 CalculaCuantilesBids <- function(datos){
@@ -239,10 +293,10 @@ print(quantile(datos$varProfundidadBids, c(.25, .50, .75), na.rm = T))
 }
 
 #Poner el dataset que queramos
-CalculaCuantilesBids(datos_ADA_USDT)
+CalculaCuantilesBids(datos_BTC_USDT)
 ```
 
-Y para asks
+Y para la oferta.
 
 ```{r message= FALSE, warning=FALSE}
 CalculaCuantilesAsks <- function(datos){
@@ -257,11 +311,13 @@ print(quantile(datos$varProfundidadAsks, c(.25, .50, .75), na.rm = T))
 }
 
 #Poner el dataset que queramos
-CalculaCuantilesAsks(datos_ADA_USDT)
+CalculaCuantilesAsks(datos_BTC_USDT)
 
 ```
 
-Dibujamos los gráficos de cajas para los valores medios de precios y profundidad, tanto para bids como para asks
+Los valores que se encuentren fuera de esos cuantiles, podrían cosiderarse sospechosos.
+
+Dibujamos los gráficos de cajas para tener una representación visual de los valores medios de precios y profundidad, tanto para bids como para asks
 
 ```{r message= FALSE, warning=FALSE}
 PintarGraficoCajasBids <- function(datos, moneda){
@@ -270,28 +326,28 @@ p1 <- ggplot(datos, aes(y = mediaBids)) +
   ggtitle(paste ("Precio medio bids ", moneda)) +
   theme_bw() +
   theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
-  labs(y = bquote(bids))
+  labs(y = bquote(BTC))
 
 p2 <- ggplot(datos, aes(y = profundidad)) +
   geom_boxplot(width = 0.4, fill = "#7eb0d5") +
   ggtitle(paste("Profundidad bids ", moneda)) +
   theme_bw() +
   theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
-  labs(y = bquote(bids))
+  labs(y = bquote(BTC))
 
 p3 <- ggplot(datos, aes(y = varPrecioMedioBids)) +
   geom_boxplot(width = 0.4, fill = "#7eb0d5") +
   ggtitle(paste("Variación precio medio bids ", moneda)) +
   theme_bw() +
   theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
-  labs(y = bquote(bids))
+  labs(y = "%")
 
 p4 <- ggplot(datos, aes(y = varProfundidadBids)) +
   geom_boxplot(width = 0.4, fill = "#7eb0d5") +
   ggtitle(paste("Variación profundidad bids ", moneda)) +
   theme_bw() +
   theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
-  labs(y = bquote(bids))
+  labs(y = "%")
 
 ggarrange(ggarrange(p1, p2),
           ggarrange(p3, p4),
@@ -300,7 +356,7 @@ ggarrange(ggarrange(p1, p2),
 }
 
 #Poner el dataset que queramos
-PintarGraficoCajasBids(datos_ADA_USDT, "ADA_USDT")
+PintarGraficoCajasBids(datos_BTC_USDT, "BTC_USDT")
 ```
 
 ```{r message= FALSE, warning=FALSE}
@@ -310,28 +366,28 @@ p1 <- ggplot(datos, aes(y = mediaAsks)) +
   ggtitle(paste("Precio medio asks ", moneda)) +
   theme_bw() +
   theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
-  labs(y = bquote(bids))
+  labs(y = bquote(BTC))
 
 p2 <- ggplot(datos, aes(y = profundidadAsks)) +
   geom_boxplot(width = 0.4, fill = "#d67229") +
   ggtitle(paste("Profundidad asks ", moneda)) +
   theme_bw() +
   theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
-  labs(y = bquote(bids))
+  labs(y = bquote(BTC))
 
 p3 <- ggplot(datos, aes(y = varPrecioMedioAsks)) +
   geom_boxplot(width = 0.4, fill = "#d67229") +
   ggtitle(paste("Variación precio medio asks ", moneda)) +
   theme_bw() +
   theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
-  labs(y = bquote(bids))
+  labs(y = "%")
 
 p4 <- ggplot(datos, aes(y = varProfundidadAsks)) +
   geom_boxplot(width = 0.4, fill = "#d67229") +
   ggtitle(paste ("Variación profundidad asks ", moneda)) +
   theme_bw() +
   theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
-  labs(y = bquote(bids))
+  labs(y = "%")
 
 ggarrange(ggarrange(p1, p2),
           ggarrange(p3, p4),
@@ -339,10 +395,10 @@ ggarrange(ggarrange(p1, p2),
           ) 
 }
 
-PintarGraficoCajasAsks(datos_ADA_USDT, "ADA_USDT")
+PintarGraficoCajasAsks(datos_BTC_USDT, "BTC_USDT")
 ```
 
-## Visualización de los datos
+## 4. Visualización de los datos
 
 ```{r message= FALSE, warning=FALSE}
 
@@ -493,6 +549,10 @@ grafica_evolucion_profundidad_bids_asks(datos_BTC_USDT, "10 sec", "Evolución de
 
 ```
 
+El sentimiento compra-venta lo calculamos como la ratio entre bids y asks.
+* Un valor muy bajo implica que mucha gente quiere vender frente a poca gente que quiere comprar.
+* Un valor muy alto implica que mucha gente quiere comprar frente a poca gente que quiere vender.
+
 ```{r message= FALSE, warning=FALSE}
 
 grafica_evolucion_compra_venta <- function (datos, time_lag, titulo_grafico, y_label) {
@@ -534,7 +594,7 @@ grafica_evolucion_compra_venta(datos_XRP_USDT, "10 sec", "Evolución del sentimi
 
 
 
-## Apéndice de funciones auxilliares y operaciones realizadas para transformar los csv iniciales en los ficheros que finalmente cargamos.
+## 5. Apéndice de funciones auxilliares y operaciones realizadas para transformar los csv iniciales en los ficheros que finalmente cargamos.
 
  A continuación se muestran las funciones auxilliares y operaciones realizadas para transformar los csv iniciales en los ficheros que finalmente cargamos dentro de este fichero.
  
