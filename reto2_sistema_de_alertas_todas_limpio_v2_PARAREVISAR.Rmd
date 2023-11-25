@@ -224,9 +224,9 @@ VisualizarCorrelacion (datos_ETH_BTC)
 
 Las correlaciones para ADA/USDT y para ETH/BTC son muy parecidas. Vemos que las correlaciones más fuertes parecen ser las siguientes:
 
-* Precio medio de bids - Profundidad de bids. Existe fuerte correlación negativa.
-* Profundidad de bids - Profundidad de asks. Existe fuerte correlación positiva.
-* Precio medio de asks - Profundidad de asks. Existe fuerte correlación positiva.
+* Precio medio de bids - Profundidad de bids. Existe fuerte correlación negativa. Cuanto más demanda hay, menor es el precio de ésta.
+* Profundidad de bids - Profundidad de asks. Existe fuerte correlación positiva. Cuantas más oferta hay también hay mayor demanda.
+* Precio medio de asks - Profundidad de asks. Existe fuerte correlación positiva. Cuanto mayor es el precio de la oferta, más operaciones de oferta hay.
 
 Para BTC/USDT sí que existe una correlación fuerte entre la profundidad de bids y la profundad de asks pero no observamos las otras dos correlaciones. Sí que se observa, por el contrario, una fuerte correlación entre el valor medio de bids y el valor medio de asks.
 
@@ -280,7 +280,7 @@ VisualizarCorrelacionMediaAsks_ProfAsks(datos_ADA_USDT, "ADA_USDT")
 
 ## 3. Elige umbrales de comportamiento anómalo
 
-Para ver umbrales de comportamiento anómalo, podemos calcular los cuantiles para las métricas calculadas para la oferta (los bids)
+Para ver umbrales de comportamiento anómalo, podemos calcular los cuantiles para las métricas calculadas para la demanda (los bids)
 Por ejemplo, para el cambio BTC/USDT:
 
 ```{r message= FALSE, warning=FALSE}
@@ -299,7 +299,7 @@ print(quantile(datos$varProfundidadBids, c(.25, .50, .75), na.rm = T))
 CalculaCuantilesBids(datos_BTC_USDT)
 ```
 
-Y para la demanda (asks).
+Y para la oferta (asks).
 
 ```{r message= FALSE, warning=FALSE}
 CalculaCuantilesAsks <- function(datos){
@@ -320,7 +320,7 @@ CalculaCuantilesAsks(datos_BTC_USDT)
 
 Los valores que se encuentren fuera de esos cuantiles, podrían cosiderarse sospechosos.
 
-Dibujamos los gráficos de cajas para tener una representación visual de los valores medios de precios y profundidad, para oferta (bids) y demanda (asks)
+Dibujamos los gráficos de cajas para tener una representación visual de los valores medios de precios y profundidad, para demanda (bids) y oferta (asks)
 
 ```{r message= FALSE, warning=FALSE}
 PintarGraficoCajasBids <- function(datos, moneda){
@@ -403,85 +403,14 @@ PintarGraficoCajasAsks(datos_BTC_USDT, "BTC_USDT")
 
 ## 4. Visualización de los datos
 
+### 4.1 Evolución de precio medio de oferta y demanda
+
 Como tenemos las variaciones de precios en el tiempo, vamos a estudiar su comportamiento.
-(se puede apreciar que hay un gap de varias horas sin datos)
 
-Empezamos con la oferta (bids)
+Se puede apreciar que hay varios gaps de tiempo sin datos, uno especialmente grande de varias horas entre las 00:32 y las 07:11.
 
-```{r message= FALSE, warning=FALSE}
+Por cada criptomoneda frente a USDT y ETH/USDT, vemos una comparativa entre los movimientos de oferta y demanda en los que se aprecia cómo se correlacionan la una con otra.
 
-grafica_evolucion_media_bids <- function (datos, time_lag, titulo_grafico, y_label, i) {
-  datos_agrupados <- datos %>%
-    mutate(Hora_agrupada = cut(Hora, breaks = time_lag)) %>%
-    group_by(Hora_agrupada) %>%
-    summarize(mediaBidsAgrupada = mean(mediaBids)) %>%
-    mutate(Hora_agrupada = as.POSIXct(Hora_agrupada))
-  
-  ggplot(datos_agrupados, aes(x = Hora_agrupada, y = mediaBidsAgrupada, group = 1)) + 
-    geom_line(size = 0.7, color = "#0047AB") +
-    ggtitle(titulo_grafico) +
-    theme_bw() + 
-    theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
-    labs(x = element_blank(), y = y_label) +
-    geom_hline(yintercept = quantile(datos_agrupados$mediaBidsAgrupada, c(.05, .95)), color = "red")
-}
-
-```
-
-```{r message= FALSE, warning=FALSE}
-
-grafica_evolucion_media_bids(datos_ADA_USDT, "10 sec", "Evolución del precio medio de bids ADA/USDT", "USDT", 1)
-grafica_evolucion_media_bids(datos_AVAX_USDT, "10 sec", "Evolución del precio medio de bids AVAX/USDT", "USDT", 2)
-grafica_evolucion_media_bids(datos_DOGE_USDT, "10 sec", "Evolución del precio medio de bids DOGE/USDT", "USDT", 3)
-grafica_evolucion_media_bids(datos_DOT_USDT, "10 sec", "Evolución del precio medio de bids DOT/USDT", "USDT", 4)
-grafica_evolucion_media_bids(datos_ETH_BTC, "10 sec", "Evolución del precio medio de bids ETH/BTC", "BTC", 5)
-grafica_evolucion_media_bids(datos_LTC_USDT, "10 sec", "Evolución del precio medio de bids LTC/USDT", "USDT", 6)
-grafica_evolucion_media_bids(datos_MATIC_USDT, "10 sec", "Evolución del precio medio de bids MATIC/USDT", "USDT", 7)
-grafica_evolucion_media_bids(datos_SHIB_USDT, "10 sec", "Evolución del precio medio de bids SHIB/USDT", "USDT", 8)
-grafica_evolucion_media_bids(datos_SOL_USDT, "10 sec", "Evolución del precio medio de bids SOL/USDT", "USDT", 9)
-grafica_evolucion_media_bids(datos_UNI_USDT, "10 sec", "Evolución del precio medio de bids UNI/USDT", "USDT", 10)
-grafica_evolucion_media_bids(datos_XRP_USDT, "10 sec", "Evolución del precio medio de bids XRP/USDT", "USDT", 11)
-grafica_evolucion_media_bids(datos_BTC_USDT, "10 sec", "Evolución del precio medio de bids BTC/USDT", "USDT", 12)
-
-```
-Y también con la demanda (asks):
-
-```{r message= FALSE, warning=FALSE}
-
-grafica_evolucion_media_asks <- function (datos, time_lag, titulo_grafico, y_label) {
-  datos_agrupados <- datos %>%
-    mutate(Hora_agrupada = cut(Hora, breaks = time_lag)) %>%
-    group_by(Hora_agrupada) %>%
-    summarize(mediaAsksAgrupada = mean(mediaAsks)) %>%
-    mutate(Hora_agrupada = as.POSIXct(Hora_agrupada))
-  
-  ggplot(datos_agrupados, aes(x = Hora_agrupada, y = mediaAsksAgrupada, group = 1)) + 
-    geom_line(size = 0.7, color = "#5F9EA0") +
-    ggtitle(titulo_grafico) +
-    theme_bw() + 
-    theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
-    labs(x = element_blank(), y = y_label) +
-    geom_hline(yintercept = quantile(datos_agrupados$mediaAsksAgrupada, c(.05, .95)), color = "red")
-}
-```
-
-```{r message= FALSE, warning=FALSE}
-
-grafica_evolucion_media_asks(datos_ADA_USDT, "10 sec", "Evolución del precio medio de asks ADA/USDT", "USDT")
-grafica_evolucion_media_asks(datos_AVAX_USDT, "10 sec", "Evolución del precio medio de asks AVAX/USDT", "USDT")
-grafica_evolucion_media_asks(datos_DOGE_USDT, "10 sec", "Evolución del precio medio de asks DOGE/USDT", "USDT")
-grafica_evolucion_media_asks(datos_DOT_USDT, "10 sec", "Evolución del precio medio de asks DOT/USDT", "USDT")
-grafica_evolucion_media_asks(datos_ETH_BTC, "10 sec", "Evolución del precio medio de asks ETH/BTC", "BTC")
-grafica_evolucion_media_asks(datos_LTC_USDT, "10 sec", "Evolución del precio medio de asks LTC/USDT", "USDT")
-grafica_evolucion_media_asks(datos_MATIC_USDT, "10 sec", "Evolución del precio medio de asks MATIC/USDT", "USDT")
-grafica_evolucion_media_asks(datos_SHIB_USDT, "10 sec", "Evolución del precio medio de asks SHIB/USDT", "USDT")
-grafica_evolucion_media_asks(datos_SOL_USDT, "10 sec", "Evolución del precio medio de asks SOL/USDT", "USDT")
-grafica_evolucion_media_asks(datos_UNI_USDT, "10 sec", "Evolución del precio medio de asks UNI/USDT", "USDT")
-grafica_evolucion_media_asks(datos_XRP_USDT, "10 sec", "Evolución del precio medio de asks XRP/USDT", "USDT")
-grafica_evolucion_media_asks(datos_BTC_USDT, "10 sec", "Evolución del precio medio de asks BTC/USDT", "USDT")
-
-```
-Y ahora por cada cryptomoneda frente a USDT y ETH/USDT , una comparativa entre los movimientos de oferta y demanda en los que se aprecia cómo se correlacionan la una con otra.
 ```{r message= FALSE, warning=FALSE}
 
 grafica_evolucion_media_bids_asks <- function (datos, time_lag, titulo_grafico, y_label) {
@@ -492,8 +421,8 @@ grafica_evolucion_media_bids_asks <- function (datos, time_lag, titulo_grafico, 
     mutate(Hora_agrupada = as.POSIXct(Hora_agrupada))
   
   ggplot(datos_agrupados, aes()) + 
-    geom_line(aes(x = Hora_agrupada, y = mediaBidsAgrupada, color = "Bids"), size = 0.7) +
-    geom_line(aes(x = Hora_agrupada, y = mediaAsksAgrupada, color = "Asks"), size = 0.7) +
+    geom_line(aes(x = Hora_agrupada, y = mediaBidsAgrupada, color = "Bids"), size = 0.5) +
+    geom_line(aes(x = Hora_agrupada, y = mediaAsksAgrupada, color = "Asks"), size = 0.5) +
     ggtitle(titulo_grafico) +
     theme_bw() + 
     theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
@@ -503,22 +432,34 @@ grafica_evolucion_media_bids_asks <- function (datos, time_lag, titulo_grafico, 
 }
 ```
 
-```{r message= FALSE, warning=FALSE}
+```{r message= FALSE, warning=FALSE, fig.width=10, fig.height=12}
 
-grafica_evolucion_media_bids_asks(datos_ADA_USDT, "10 sec", "Evolución del precio medio de bids y asks ADA/USDT", "USDT")
-grafica_evolucion_media_bids_asks(datos_AVAX_USDT, "10 sec", "Evolución del precio medio de bids y asks AVAX/USDT", "USDT")
-grafica_evolucion_media_bids_asks(datos_DOGE_USDT, "10 sec", "Evolución del precio medio de bids y asks DOGE/USDT", "USDT")
-grafica_evolucion_media_bids_asks(datos_DOT_USDT, "10 sec", "Evolución del precio medio de bids y asks DOT/USDT", "USDT")
-grafica_evolucion_media_bids_asks(datos_ETH_BTC, "10 sec", "Evolución del precio medio de bids y asks ETH/BTC", "BTC")
-grafica_evolucion_media_bids_asks(datos_LTC_USDT, "10 sec", "Evolución del precio medio de bids y asks LTC/USDT", "USDT")
-grafica_evolucion_media_bids_asks(datos_MATIC_USDT, "10 sec", "Evolución del precio medio de bids y asks MATIC/USDT", "USDT")
-grafica_evolucion_media_bids_asks(datos_SHIB_USDT, "10 sec", "Evolución del precio medio de bids y asks SHIB/USDT", "USDT")
-grafica_evolucion_media_bids_asks(datos_SOL_USDT, "10 sec", "Evolución del precio medio de bids y asks SOL/USDT", "USDT")
-grafica_evolucion_media_bids_asks(datos_UNI_USDT, "10 sec", "Evolución del precio medio de bids y asks UNI/USDT", "USDT")
-grafica_evolucion_media_bids_asks(datos_XRP_USDT, "10 sec", "Evolución del precio medio de bids y asks XRP/USDT", "USDT")
-grafica_evolucion_media_bids_asks(datos_BTC_USDT, "10 sec", "Evolución del precio medio de bids y asks BTC/USDT", "USDT")
+p1 <- grafica_evolucion_media_bids_asks(datos_ADA_USDT, "10 sec", "Evolución del precio medio de bids y asks ADA/USDT", "ADA")
+p2 <- grafica_evolucion_media_bids_asks(datos_AVAX_USDT, "10 sec", "Evolución del precio medio de bids y asks AVAX/USDT", "AVAX")
+p3 <- grafica_evolucion_media_bids_asks(datos_BTC_USDT, "10 sec", "Evolución del precio medio de bids y asks BTC/USDT", "BTC")
+p4 <- grafica_evolucion_media_bids_asks(datos_DOGE_USDT, "10 sec", "Evolución del precio medio de bids y asks DOGE/USDT", "DOGE")
+p5 <- grafica_evolucion_media_bids_asks(datos_DOT_USDT, "10 sec", "Evolución del precio medio de bids y asks DOT/USDT", "DOT")
+p6 <- grafica_evolucion_media_bids_asks(datos_ETH_BTC, "10 sec", "Evolución del precio medio de bids y asks ETH/BTC", "ETH")
+p7 <- grafica_evolucion_media_bids_asks(datos_LTC_USDT, "10 sec", "Evolución del precio medio de bids y asks LTC/USDT", "LTC")
+p8 <- grafica_evolucion_media_bids_asks(datos_MATIC_USDT, "10 sec", "Evolución del precio medio de bids y asks MATIC/USDT", "MATIC")
+p9 <- grafica_evolucion_media_bids_asks(datos_SHIB_USDT, "10 sec", "Evolución del precio medio de bids y asks SHIB/USDT", "SHIB")
+p10 <- grafica_evolucion_media_bids_asks(datos_SOL_USDT, "10 sec", "Evolución del precio medio de bids y asks SOL/USDT", "SOL")
+p11 <- grafica_evolucion_media_bids_asks(datos_UNI_USDT, "10 sec", "Evolución del precio medio de bids y asks UNI/USDT", "UNI")
+p12 <- grafica_evolucion_media_bids_asks(datos_XRP_USDT, "10 sec", "Evolución del precio medio de bids y asks XRP/USDT", "XRP")
+
+ggarrange(ggarrange(p1, p2),
+          ggarrange(p3, p4),
+          ggarrange(p5, p6),
+          ggarrange(p7, p8),
+          ggarrange(p9, p10),
+          ggarrange(p11, p12),
+          nrow = 6
+          )
 
 ```
+
+### 4.2 Evolución de profundidad de oferta y demanda
+
 Vamos a estudiar también la profundidad:
 
 ```{r message= FALSE, warning=FALSE}
@@ -531,8 +472,8 @@ grafica_evolucion_profundidad_bids_asks <- function (datos, time_lag, titulo_gra
     mutate(Hora_agrupada = as.POSIXct(Hora_agrupada))
   
   ggplot(datos_agrupados, aes()) + 
-    geom_line(aes(x = Hora_agrupada, y = profBidsAgrupada, color = "Bids"), size = 0.7) +
-    geom_line(aes(x = Hora_agrupada, y = profAsksAgrupada, color = "Asks"), size = 0.7) +
+    geom_line(aes(x = Hora_agrupada, y = profBidsAgrupada, color = "Bids"), size = 0.5) +
+    geom_line(aes(x = Hora_agrupada, y = profAsksAgrupada, color = "Asks"), size = 0.5) +
     ggtitle(titulo_grafico) +
     theme_bw() + 
     theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
@@ -542,24 +483,190 @@ grafica_evolucion_profundidad_bids_asks <- function (datos, time_lag, titulo_gra
 }
 ```
 
-```{r message= FALSE, warning=FALSE}
+```{r message= FALSE, warning=FALSE, fig.width=10, fig.height=12}
 
-grafica_evolucion_profundidad_bids_asks(datos_ADA_USDT, "10 sec", "Evolución de profundidad de bids y asks ADA/USDT", "operaciones")
-grafica_evolucion_profundidad_bids_asks(datos_AVAX_USDT, "10 sec", "Evolución del profundidad de bids y asks AVAX/USDT", "operaciones")
-grafica_evolucion_profundidad_bids_asks(datos_DOGE_USDT, "10 sec", "Evolución del profundidad de bids y asks DOGE/USDT", "operaciones")
-grafica_evolucion_profundidad_bids_asks(datos_DOT_USDT, "10 sec", "Evolución del profundidad de bids y asks DOT/USDT", "operaciones")
-grafica_evolucion_profundidad_bids_asks(datos_ETH_BTC, "10 sec", "Evolución del profundidad de bids y asks ETH/BTC", "operaciones")
-grafica_evolucion_profundidad_bids_asks(datos_LTC_USDT, "10 sec", "Evolución del profundidad de bids y asks LTC/USDT", "operaciones")
-grafica_evolucion_profundidad_bids_asks(datos_MATIC_USDT, "10 sec", "Evolución del profundidad de bids y asks MATIC/USDT", "operaciones")
-grafica_evolucion_profundidad_bids_asks(datos_SHIB_USDT, "10 sec", "Evolución del profundidad de bids y asks SHIB/USDT", "operaciones")
-grafica_evolucion_profundidad_bids_asks(datos_SOL_USDT, "10 sec", "Evolución del profundidad de bids y asks SOL/USDT", "operaciones")
-grafica_evolucion_profundidad_bids_asks(datos_UNI_USDT, "10 sec", "Evolución del profundidad de bids y asks UNI/USDT", "operaciones")
-grafica_evolucion_profundidad_bids_asks(datos_XRP_USDT, "10 sec", "Evolución del profundidad de bids y asks XRP/USDT", "operaciones")
-grafica_evolucion_profundidad_bids_asks(datos_BTC_USDT, "10 sec", "Evolución del profundidad de bids y asks BTC/USDT", "operaciones")
+p1 <- grafica_evolucion_profundidad_bids_asks(datos_ADA_USDT, "10 sec", "Evolución de profundidad de bids y asks ADA/USDT", "operaciones")
+p2 <- grafica_evolucion_profundidad_bids_asks(datos_AVAX_USDT, "10 sec", "Evolución del profundidad de bids y asks AVAX/USDT", "operaciones")
+p3 <- grafica_evolucion_profundidad_bids_asks(datos_DOGE_USDT, "10 sec", "Evolución del profundidad de bids y asks DOGE/USDT", "operaciones")
+p4 <- grafica_evolucion_profundidad_bids_asks(datos_DOT_USDT, "10 sec", "Evolución del profundidad de bids y asks DOT/USDT", "operaciones")
+p5 <- grafica_evolucion_profundidad_bids_asks(datos_ETH_BTC, "10 sec", "Evolución del profundidad de bids y asks ETH/BTC", "operaciones")
+p6 <- grafica_evolucion_profundidad_bids_asks(datos_LTC_USDT, "10 sec", "Evolución del profundidad de bids y asks LTC/USDT", "operaciones")
+p7 <- grafica_evolucion_profundidad_bids_asks(datos_MATIC_USDT, "10 sec", "Evolución del profundidad de bids y asks MATIC/USDT", "operaciones")
+p8 <- grafica_evolucion_profundidad_bids_asks(datos_SHIB_USDT, "10 sec", "Evolución del profundidad de bids y asks SHIB/USDT", "operaciones")
+p9 <- grafica_evolucion_profundidad_bids_asks(datos_SOL_USDT, "10 sec", "Evolución del profundidad de bids y asks SOL/USDT", "operaciones")
+p10 <- grafica_evolucion_profundidad_bids_asks(datos_UNI_USDT, "10 sec", "Evolución del profundidad de bids y asks UNI/USDT", "operaciones")
+p11 <- grafica_evolucion_profundidad_bids_asks(datos_XRP_USDT, "10 sec", "Evolución del profundidad de bids y asks XRP/USDT", "operaciones")
+p12 <- grafica_evolucion_profundidad_bids_asks(datos_BTC_USDT, "10 sec", "Evolución del profundidad de bids y asks BTC/USDT", "operaciones")
+
+ggarrange(ggarrange(p1, p2),
+          ggarrange(p3, p4),
+          ggarrange(p5, p6),
+          ggarrange(p7, p8),
+          ggarrange(p9, p10),
+          ggarrange(p11, p12),
+          nrow = 6
+          )
 
 ```
 
+En la mayoría de los casos vemos que hay una fuerte caída repentina de la oferta durante el día 9 alrededor de las 16:00. Si miramos las gráficas de los precios medios, vemos que esto se tradujo, un poco después, en una caída en el precio medio tanto de oferta como de demanda.
+
+### 4.3 Precio medio de demanda con señales de alerta
+
+En las siguientes gráficas vamos a mostrar los valores de precio medio de demanda (bids), mostrando líneas que sirvan para visualizar los posibles valores de alertas. Hemos seleccionado como valores sospechosos aquellos que pasan del percentil 95 o aquellos por debajo del percentil 5. Estos valores son configurables en la función grafica_evolucion_media_bids (se pasan como parámetro).
+
+```{r message= FALSE, warning=FALSE}
+
+grafica_evolucion_media_bids <- function (datos, time_lag, titulo_grafico, y_label, i, limits) {
+  datos_agrupados <- datos %>%
+    mutate(Hora_agrupada = cut(Hora, breaks = time_lag)) %>%
+    group_by(Hora_agrupada) %>%
+    summarize(mediaBidsAgrupada = mean(mediaBids)) %>%
+    mutate(Hora_agrupada = as.POSIXct(Hora_agrupada))
+  
+  ggplot(datos_agrupados, aes(x = Hora_agrupada, y = mediaBidsAgrupada, group = 1)) + 
+    geom_line(size = 0.5, color = "#0047AB") +
+    ggtitle(titulo_grafico) +
+    theme_bw() + 
+    theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
+    labs(x = element_blank(), y = y_label) +
+    geom_hline(yintercept = quantile(datos_agrupados$mediaBidsAgrupada, limits), color = "red")
+}
+
+```
+
+```{r message= FALSE, warning=FALSE, fig.width=10, fig.height=12}
+
+p1 <- grafica_evolucion_media_bids(datos_ADA_USDT, "10 sec", "Evolución del precio medio de bids ADA/USDT", "ADA", 1, c(.05, .95))
+p2 <- grafica_evolucion_media_bids(datos_AVAX_USDT, "10 sec", "Evolución del precio medio de bids AVAX/USDT", "AVAX", 2, c(.05, .95))
+p3 <- grafica_evolucion_media_bids(datos_DOGE_USDT, "10 sec", "Evolución del precio medio de bids DOGE/USDT", "DOGE", 3, c(.05, .95))
+p4 <- grafica_evolucion_media_bids(datos_DOT_USDT, "10 sec", "Evolución del precio medio de bids DOT/USDT", "DOT", 4, c(.05, .95))
+p5 <- grafica_evolucion_media_bids(datos_ETH_BTC, "10 sec", "Evolución del precio medio de bids ETH/BTC", "ETH", 5, c(.05, .95))
+p6 <- grafica_evolucion_media_bids(datos_LTC_USDT, "10 sec", "Evolución del precio medio de bids LTC/USDT", "LTC", 6, c(.05, .95))
+p7 <- grafica_evolucion_media_bids(datos_MATIC_USDT, "10 sec", "Evolución del precio medio de bids MATIC/USDT", "MATIC", 7, c(.05, .95))
+p8 <- grafica_evolucion_media_bids(datos_SHIB_USDT, "10 sec", "Evolución del precio medio de bids SHIB/USDT", "SHIB", 8, c(.05, .95))
+p9 <- grafica_evolucion_media_bids(datos_SOL_USDT, "10 sec", "Evolución del precio medio de bids SOL/USDT", "SOL", 9, c(.05, .95))
+p10 <- grafica_evolucion_media_bids(datos_UNI_USDT, "10 sec", "Evolución del precio medio de bids UNI/USDT", "UNI", 10, c(.05, .95))
+p11 <- grafica_evolucion_media_bids(datos_XRP_USDT, "10 sec", "Evolución del precio medio de bids XRP/USDT", "XRP", 11, c(.05, .95))
+p12 <- grafica_evolucion_media_bids(datos_BTC_USDT, "10 sec", "Evolución del precio medio de bids BTC/USDT", "BTC", 12, c(.05, .95))
+
+ggarrange(ggarrange(p1, p2),
+          ggarrange(p3, p4),
+          ggarrange(p5, p6),
+          ggarrange(p7, p8),
+          ggarrange(p9, p10),
+          ggarrange(p11, p12),
+          nrow = 6
+          )
+
+```
+
+### 4.4 Precio medio de oferta con señales de alerta
+
+En este caso, vamos a hacer lo mismo para el precio de la oferta (asks).
+
+```{r message= FALSE, warning=FALSE}
+
+grafica_evolucion_media_asks <- function (datos, time_lag, titulo_grafico, y_label, limits) {
+  datos_agrupados <- datos %>%
+    mutate(Hora_agrupada = cut(Hora, breaks = time_lag)) %>%
+    group_by(Hora_agrupada) %>%
+    summarize(mediaAsksAgrupada = mean(mediaAsks)) %>%
+    mutate(Hora_agrupada = as.POSIXct(Hora_agrupada))
+  
+  ggplot(datos_agrupados, aes(x = Hora_agrupada, y = mediaAsksAgrupada, group = 1)) + 
+    geom_line(size = 0.5, color = "#5F9EA0") +
+    ggtitle(titulo_grafico) +
+    theme_bw() + 
+    theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
+    labs(x = element_blank(), y = y_label) +
+    geom_hline(yintercept = quantile(datos_agrupados$mediaAsksAgrupada, limits), color = "red")
+}
+```
+
+```{r message= FALSE, warning=FALSE, fig.width=10, fig.height=12}
+
+p1 <- grafica_evolucion_media_asks(datos_ADA_USDT, "10 sec", "Evolución del precio medio de asks ADA/USDT", "ADA", c(.05, .95))
+p2 <- grafica_evolucion_media_asks(datos_AVAX_USDT, "10 sec", "Evolución del precio medio de asks AVAX/USDT", "AVAX", c(.05, .95))
+p3 <- grafica_evolucion_media_asks(datos_DOGE_USDT, "10 sec", "Evolución del precio medio de asks DOGE/USDT", "DOGE", c(.05, .95))
+p4 <- grafica_evolucion_media_asks(datos_DOT_USDT, "10 sec", "Evolución del precio medio de asks DOT/USDT", "DOT", c(.05, .95))
+p5 <- grafica_evolucion_media_asks(datos_ETH_BTC, "10 sec", "Evolución del precio medio de asks ETH/BTC", "ETH", c(.05, .95))
+p6 <- grafica_evolucion_media_asks(datos_LTC_USDT, "10 sec", "Evolución del precio medio de asks LTC/USDT", "LTC", c(.05, .95))
+p7 <- grafica_evolucion_media_asks(datos_MATIC_USDT, "10 sec", "Evolución del precio medio de asks MATIC/USDT", "MATIC", c(.05, .95))
+p8 <- grafica_evolucion_media_asks(datos_SHIB_USDT, "10 sec", "Evolución del precio medio de asks SHIB/USDT", "SHIB", c(.05, .95))
+p9 <- grafica_evolucion_media_asks(datos_SOL_USDT, "10 sec", "Evolución del precio medio de asks SOL/USDT", "SOL", c(.05, .95))
+p10 <- grafica_evolucion_media_asks(datos_UNI_USDT, "10 sec", "Evolución del precio medio de asks UNI/USDT", "UNI", c(.05, .95))
+p11 <- grafica_evolucion_media_asks(datos_XRP_USDT, "10 sec", "Evolución del precio medio de asks XRP/USDT", "XRP", c(.05, .95))
+p12 <- grafica_evolucion_media_asks(datos_BTC_USDT, "10 sec", "Evolución del precio medio de asks BTC/USDT", "BTC", c(.05, .95))
+
+ggarrange(ggarrange(p1, p2),
+          ggarrange(p3, p4),
+          ggarrange(p5, p6),
+          ggarrange(p7, p8),
+          ggarrange(p9, p10),
+          ggarrange(p11, p12),
+          nrow = 6
+          )
+
+```
+
+### 4.5 Variación del precio medio de demanda con señales de alerta
+
+Podemos mirar también la variación del precio medio de la demand, aunque en este caso, debemos quitar las variaciones correspondientes a los espaciones de tiempo de los que no disponemos de datos porque nos generan mucho ruido.
+
+```{r message= FALSE, warning=FALSE}
+
+grafica_evolucion_var_media_bids <- function (datos, time_lag, titulo_grafico, limits) {
+  datos_agrupados <- datos %>%
+    mutate(Hora_agrupada = cut(Hora, breaks = time_lag)) %>%
+    filter(tiempoLlegada < 1) %>%
+    group_by(Hora_agrupada) %>%
+    summarize(varMediaBidsAgrupada = mean(varPrecioMedioBids)) %>%
+    mutate(Hora_agrupada = as.POSIXct(Hora_agrupada))
+  
+  ggplot(datos_agrupados, aes(x = Hora_agrupada, y = varMediaBidsAgrupada, group = 1)) + 
+    geom_line(size = 0.5, color = "#0047AB") +
+    ggtitle(titulo_grafico) +
+    theme_bw() + 
+    theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
+    labs(x = element_blank(), y = "%") +
+    geom_hline(yintercept = quantile(datos_agrupados$varMediaBidsAgrupada, limits, na.rm = T), color = "red")
+}
+
+```
+
+```{r message= FALSE, warning=FALSE, fig.width=10, fig.height=12}
+
+p1 <- grafica_evolucion_var_media_bids(datos_ADA_USDT, "10 sec", "Variación del precio medio de bids ADA/USDT", c(.01, .99))
+p2 <- grafica_evolucion_var_media_bids(datos_AVAX_USDT, "10 sec", "Variación del precio medio de bids AVAX/USDT", c(.01, .99))
+p3 <- grafica_evolucion_var_media_bids(datos_DOGE_USDT, "10 sec", "Variación del precio medio de bids DOGE/USDT", c(.01, .99))
+p4 <- grafica_evolucion_var_media_bids(datos_DOT_USDT, "10 sec", "Variación del precio medio de bids DOT/USDT", c(.01, .99))
+p5 <- grafica_evolucion_var_media_bids(datos_ETH_BTC, "10 sec", "Variación del precio medio de bids ETH/BTC", c(.01, .99))
+p6 <- grafica_evolucion_var_media_bids(datos_LTC_USDT, "10 sec", "Variación del precio medio de bids LTC/USDT", c(.01, .99))
+p7 <- grafica_evolucion_var_media_bids(datos_MATIC_USDT, "10 sec", "Variación del precio medio de bids MATIC/USDT", c(.01, .99))
+p8 <- grafica_evolucion_var_media_bids(datos_SHIB_USDT, "10 sec", "Variación del precio medio de bids SHIB/USDT", c(.01, .99))
+p9 <- grafica_evolucion_var_media_bids(datos_SOL_USDT, "10 sec", "Variación del precio medio de bids SOL/USDT", c(.01, .99))
+p10 <- grafica_evolucion_var_media_bids(datos_UNI_USDT, "10 sec", "Variación del precio medio de bids UNI/USDT", c(.01, .99))
+p11 <- grafica_evolucion_var_media_bids(datos_XRP_USDT, "10 sec", "Variación del precio medio de bids XRP/USDT", c(.01, .99))
+p12 <- grafica_evolucion_var_media_bids(datos_BTC_USDT, "10 sec", "Variación del precio medio de bids BTC/USDT", c(.01, .99))
+
+ggarrange(ggarrange(p1, p2),
+          ggarrange(p3, p4),
+          ggarrange(p5, p6),
+          ggarrange(p7, p8),
+          ggarrange(p9, p10),
+          ggarrange(p11, p12),
+          nrow = 6
+          )
+
+```
+
+Vemos que, pese a haber quitado los gaps de horas sin datos, seguimos teniendo picos de variaciónes grandes, si bien los intervalos de tiempo son tan cortos, que en realidad los porcentajes de variación no dejan de ser muy pequeños (menos del 0,015%)
+
+### 4.6 Sentimiento compra-venta
+
 El sentimiento compra-venta lo calculamos como la ratio entre bids y asks.
+
 * Un valor muy bajo implica que mucha gente quiere vender frente a poca gente que quiere comprar.
 * Un valor muy alto implica que mucha gente quiere comprar frente a poca gente que quiere vender.
 
@@ -573,55 +680,85 @@ grafica_evolucion_compra_venta <- function (datos, time_lag, titulo_grafico, y_l
     mutate(Hora_agrupada = as.POSIXct(Hora_agrupada))
   
   ggplot(datos_agrupados, aes(x = Hora_agrupada, y = compraVentaAgrupada, group = 1)) + 
-    geom_line(size = 0.7, color = "#0047AB") +
+    geom_line(size = 0.5, color = "#0047AB") +
     ggtitle(titulo_grafico) +
     theme_bw() + 
     theme(axis.text = element_text(size = 8), axis.title =  element_text(size = 9), plot.title = element_text(face = 'bold')) + 
     labs(x = element_blank(), y = y_label)
 }
-```
-
-```{r message= FALSE, warning=FALSE}
-
-grafica_evolucion_compra_venta(datos_ADA_USDT, "10 sec", "Evolución del sentimiento Compra-Venta ADA/USDT", "bids-asks ratio")
-grafica_evolucion_compra_venta(datos_AVAX_USDT, "10 sec", "Evolución del sentimiento Compra-Venta AVAX/USDT", "bids-asks ratio")
-grafica_evolucion_compra_venta(datos_BTC_USDT, "10 sec", "Evolución del sentimiento Compra-Venta BTC/USDT", "bids-asks ratio")
-grafica_evolucion_compra_venta(datos_DOGE_USDT, "10 sec", "Evolución del sentimiento Compra-Venta DOGE/USDT", "bids-asks ratio")
-grafica_evolucion_compra_venta(datos_DOT_USDT, "10 sec", "Evolución del sentimiento Compra-Venta DOT/USDT", "bids-asks ratio")
-grafica_evolucion_compra_venta(datos_ETH_BTC, "10 sec", "Evolución del sentimiento Compra-Venta ETH/USDT", "bids-asks ratio")
-grafica_evolucion_compra_venta(datos_LTC_USDT, "10 sec", "Evolución del sentimiento Compra-Venta LTC/USDT", "bids-asks ratio")
-grafica_evolucion_compra_venta(datos_MATIC_USDT, "10 sec", "Evolución del sentimiento Compra-Venta MATIC/USDT", "bids-asks ratio")
-grafica_evolucion_compra_venta(datos_SHIB_USDT, "10 sec", "Evolución del sentimiento Compra-Venta SHIB/USDT", "bids-asks ratio")
-grafica_evolucion_compra_venta(datos_SOL_USDT, "10 sec", "Evolución del sentimiento Compra-Venta SOL/USDT", "bids-asks ratio")
-grafica_evolucion_compra_venta(datos_UNI_USDT, "10 sec", "Evolución del sentimiento Compra-Venta UNI/USDT", "bids-asks ratio")
-grafica_evolucion_compra_venta(datos_XRP_USDT, "10 sec", "Evolución del sentimiento Compra-Venta XRP/USDT", "bids-asks ratio")
 
 ```
 
+```{r message= FALSE, warning=FALSE, fig.width=10, fig.height=12}
 
+p1 <- grafica_evolucion_compra_venta(datos_ADA_USDT, "10 sec", "Evolución del sentimiento Compra-Venta ADA/USDT", "bids-asks ratio")
+p2 <- grafica_evolucion_compra_venta(datos_AVAX_USDT, "10 sec", "Evolución del sentimiento Compra-Venta AVAX/USDT", "bids-asks ratio")
+p3 <- grafica_evolucion_compra_venta(datos_BTC_USDT, "10 sec", "Evolución del sentimiento Compra-Venta BTC/USDT", "bids-asks ratio")
+p4 <- grafica_evolucion_compra_venta(datos_DOGE_USDT, "10 sec", "Evolución del sentimiento Compra-Venta DOGE/USDT", "bids-asks ratio")
+p5 <- grafica_evolucion_compra_venta(datos_DOT_USDT, "10 sec", "Evolución del sentimiento Compra-Venta DOT/USDT", "bids-asks ratio")
+p6 <- grafica_evolucion_compra_venta(datos_ETH_BTC, "10 sec", "Evolución del sentimiento Compra-Venta ETH/USDT", "bids-asks ratio")
+p7 <- grafica_evolucion_compra_venta(datos_LTC_USDT, "10 sec", "Evolución del sentimiento Compra-Venta LTC/USDT", "bids-asks ratio")
+p8 <- grafica_evolucion_compra_venta(datos_MATIC_USDT, "10 sec", "Evolución del sentimiento Compra-Venta MATIC/USDT", "bids-asks ratio")
+p9 <- grafica_evolucion_compra_venta(datos_SHIB_USDT, "10 sec", "Evolución del sentimiento Compra-Venta SHIB/USDT", "bids-asks ratio")
+p10 <- grafica_evolucion_compra_venta(datos_SOL_USDT, "10 sec", "Evolución del sentimiento Compra-Venta SOL/USDT", "bids-asks ratio")
+p11 <- grafica_evolucion_compra_venta(datos_UNI_USDT, "10 sec", "Evolución del sentimiento Compra-Venta UNI/USDT", "bids-asks ratio")
+p12 <- grafica_evolucion_compra_venta(datos_XRP_USDT, "10 sec", "Evolución del sentimiento Compra-Venta XRP/USDT", "bids-asks ratio")
 
+ggarrange(ggarrange(p1, p2),
+          ggarrange(p3, p4),
+          ggarrange(p5, p6),
+          ggarrange(p7, p8),
+          ggarrange(p9, p10),
+          ggarrange(p11, p12),
+          nrow = 6
+          )
 
-
-
+```
 
 ## 5. Apéndice de funciones auxilliares y operaciones realizadas para transformar los csv iniciales en los ficheros que finalmente cargamos.
 
- A continuación se muestran las funciones auxiliares y operaciones realizadas para transformar los csv iniciales en los ficheros que finalmente cargamos dentro de este fichero.
+A continuación se muestran las funciones auxiliares y operaciones realizadas para transformar los csv iniciales en los ficheros que finalmente cargamos dentro de este fichero.
  
 Por problemas en rendimiento y memoria hemos tenido que realizar un preprocesamiento de los datos hasta tenerlos en el formato con el que vamos a trabajar y que mostramos al inicio de este documento.
 
-Carga de la información cuantitativa de las monedas en un único dataset:
+Carga de la información cuantitativa de cada monedas en un único dataset, leyendo también la última columna que tiene información en formato json:
+
 ```{r message= FALSE, warning=FALSE}
 
-# info_cuantitativa <-
-#   list.files(path = 'Data/información_cuantitava_monedas_reto2', pattern = "*.csv", full.names = TRUE, recursive = TRUE) %>%
-#   map_df(~fread(.x))
-# 
-# str(info_cuantitativa)
+#read_symbol <- function (fname, symbol) {
+#  df <- fread(fname)
+#  colnames(df) <- c("Hora", "Exchange","Divisa", "Datos")
+#  df <- df[df$Divisa == symbol]
+#  df$Datos <- gsub("\\n", "", gsub("'", "\"", gsub("None", "\"0\"", df$Datos)))
+
+#  df_json <- jsonlite::stream_in(textConnection(df$Datos), pagesize = 10000)
+  
+#  df_json$Exchange <- df$Exchange
+#  df_json$Hora <- df$Hora
+
+#  df = select(df_json, -4:-6)
+  
+#  return(df)
+#}
+
+
+#for (symbol in symbols) {
+#  rm(info_symbol)
+#  gc()
+  
+#  info_symbol <- data.frame()
+  
+#  info_symbol <- list.files(path = 'Data/información_cuantitava_monedas_reto2', pattern = "*.csv", full.names = TRUE, recursive = TRUE) %>%
+#    map_df(~rbind(read_symbol(.x, symbol), info_symbol))
+  
+  # Guardamos
+#  save(info_symbol, file=paste("crypto_orderbooks_", gsub("/", "_", symbol), ".Rda", sep = ""))
+#}
 
 ```
 
 Ponemos nombres a las columnas y hacemos un dataset por cada cryptodivisa (A modo de ejemplo ponemos el de BTC)
+
 ```{r}
 # colnames(info_cuantitativa) <- c("Hora", "Exchange","Divisa", "Datos")
 # infoBTCUSD<-info_cuantitativa[info_cuantitativa$Divisa == 'BTC/USDT']
@@ -629,6 +766,7 @@ Ponemos nombres a las columnas y hacemos un dataset por cada cryptodivisa (A mod
 
 
 Calculamos para cada dataframe los valores que luego vamos a utilizar para el análisis y que luego nos permiten eliminar las columnas con las listas, que ocupan demasiada memoria.
+
 ```{r}
 # 
 #  for (i in 1:nrow(info_symbol)){
