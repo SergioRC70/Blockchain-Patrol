@@ -289,6 +289,30 @@ nvt
 
 ```
 
+### Evolución temporal del BTC
+
+Como curiosidad adidional, vamos a visualizar la evolución del Bitcoin.
+
+Para ello convertimos a objeto xts para trabajar con series temporales y creamos el gráfico
+
+```{r message= FALSE, warning=FALSE}
+
+info_cuantitativa_ts_bitcoin <- info_cuantitativa %>%
+  ungroup() %>%
+  filter(Currency == "Bitcoin") %>%
+  select(Date, Close, Return_Pctg)
+
+info_cuantitativa_ts_bitcoin <- as.xts(info_cuantitativa_ts_bitcoin[, -1], order.by = as.Date(info_cuantitativa_ts_bitcoin$Date))
+
+```
+
+```{r message= FALSE, warning=FALSE}
+
+dygraph(info_cuantitativa_ts_bitcoin$Close, main = "Bitcoin") %>%
+  dyAxis("y", label = "%") %>%
+  dyOptions(colors = RColorBrewer::brewer.pal(3, "Set2"))
+
+```
 
 ## Clustering
 
