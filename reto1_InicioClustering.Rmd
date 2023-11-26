@@ -32,7 +32,7 @@ library(corrplot)
 
 ## Carga y limpieza de los datos
 
-Cargamos en primer lugar la información cualitativa de las monedas.
+Cargamos en primer lugar la información cualitativa de las monedas. Para ello incluimos una carpeta "Data" con los ficheros al mismo nivel de ejecución de este fichero RMD
 
 ```{r message= FALSE, warning=FALSE}
 
@@ -490,3 +490,20 @@ De esta matriz observamos que hay una altísima correlación entre el MarketCap 
 Por el contrario podemos ver que las métricas de NVT SharpeRatio están más relacionadas con la volatilidad.
 
 Además, el volumen y el MarketCap tienen una relación inversa con la volatilidad.
+
+
+## Diagramas en otros formatos.
+
+Para completar el análisis de los datos, se incluyen en la entrega gráficos generados en PowerBI y en Excel en los ficheros.
+
+Para ello se realizó una exportación a Excel del dataset crypto_summary_by_currency para representar los siguientes diagramas con PowerBI.
+
+- Sharpe Ratio: Diagrama que indica por cada criptomoeda su valor.
+- Información global: Volumen y MarketCap por cada criptomoneda.
+- Porcentaje de volumen de operaciones sobre el total. Amplia mayoría de BTC y ETH
+- Posibles valores inflados. NVT alto sobre volumen de operaciones bajo.
+- Posibles valores burbuja. 
+- Diagramas con el volumen de cada cluster en función del número de monedas por grupo
+
+Adicionalmente, se facilita un diagrama en Excel con el Market Cap de las criptomonedas separadas por los grupos generados a partir de los 4 grupos o clusters generados en este dataset
+
